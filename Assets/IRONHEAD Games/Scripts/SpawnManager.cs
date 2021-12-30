@@ -6,6 +6,9 @@ public class SpawnManager : MonoBehaviour
 {
 
     [SerializeField]
+    GameObject MetaAvatarPrefab;
+
+    [SerializeField]
     GameObject GenericVRPlayerPrefab;
 
     public Vector3 spawnPosition;
@@ -14,7 +17,8 @@ public class SpawnManager : MonoBehaviour
     {
         if (PhotonNetwork.IsConnectedAndReady)
         {
-            PhotonNetwork.Instantiate(GenericVRPlayerPrefab.name, spawnPosition, Quaternion.identity);
+            //PhotonNetwork.Instantiate(GenericVRPlayerPrefab.name, spawnPosition, Quaternion.identity);
+            PhotonNetwork.Instantiate(MetaAvatarPrefab.name, spawnPosition, Quaternion.identity);
         }
     }
 

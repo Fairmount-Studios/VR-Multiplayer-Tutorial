@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.07127813, g: 0.09106488, b: 0.16598153, a: 1}
+  m_IndirectSpecularColor: {r: 0.0051859813, g: 0.007907566, b: 0.026106287, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -9981,6 +9981,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: edee0cc158e384845accbe08731e6d9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  MetaAvatarPrefab: {fileID: 705909372409041623, guid: ba77ff95ead03314ca959ef574a1116c, type: 3}
   GenericVRPlayerPrefab: {fileID: 4050489475725942366, guid: 3d33e6a07da6ebc49b5ebf396059a914, type: 3}
   spawnPosition: {x: -21, y: 6.23, z: -25}
 --- !u!4 &868661712 stripped
@@ -12927,6 +12928,10 @@ PrefabInstance:
     - target: {fileID: 4828667038034581792, guid: 9c5622240039f924b8638f9ee8c4996e, type: 3}
       propertyPath: m_Layer
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4828667038034581792, guid: 9c5622240039f924b8638f9ee8c4996e, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8455937997289204531, guid: 9c5622240039f924b8638f9ee8c4996e, type: 3}
       propertyPath: m_RootOrder
@@ -22883,6 +22888,10 @@ PrefabInstance:
     - target: {fileID: 2117200102568480129, guid: 1cd7de6eee15b15468784544d15ae3f3, type: 3}
       propertyPath: m_Layer
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2117200102568480129, guid: 1cd7de6eee15b15468784544d15ae3f3, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3114968798475927442, guid: 1cd7de6eee15b15468784544d15ae3f3, type: 3}
       propertyPath: m_RootOrder
