@@ -720,17 +720,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4050489475725942366}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d00e1960b2ff1824c816d7cd54e8afa7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   generalVRPlayerTransform: {fileID: 8937807886220015026}
   mainAvatarTransform: {fileID: 298252557010166650}
-  headTransform: {fileID: 4191760512321387370}
-  bodyTransform: {fileID: 1763648338200997357}
-  leftHandTransform: {fileID: 2684176392579052662}
-  rightHandTransform: {fileID: 1638574243631797037}
 --- !u!1 &4466721721619533013
 GameObject:
   m_ObjectHideFlags: 0
