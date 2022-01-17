@@ -149,7 +149,7 @@ public class RoomManager : MonoBehaviourPunCallbacks
     {
         string randomRoomName = "Room_" + mapType + Random.Range(0, 10000);
         RoomOptions roomOptions = new RoomOptions();
-        roomOptions.MaxPlayers = 20;
+        roomOptions.MaxPlayers = 2;
 
 
         string[] roomPropsInLobby = { MultiplayerVRConstants.MAP_TYPE_KEY };
