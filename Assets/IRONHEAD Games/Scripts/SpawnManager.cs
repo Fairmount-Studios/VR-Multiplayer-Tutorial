@@ -13,6 +13,8 @@ public class SpawnManager : MonoBehaviour
 
     public Vector3 spawnPosition1;
     public Vector3 spawnPosition2;
+    public Vector3 spawnPosition3;
+    public Vector3 spawnPosition4;
     private Vector3 spawnPosition;
     // Start is called before the first frame update
     void Start()
@@ -21,12 +23,22 @@ public class SpawnManager : MonoBehaviour
         {
             // Get spawning point
             // See if another player exists
-            if (GameObject.Find("Network Avatar(Clone)"))
+            int playerCount = PhotonNetwork.CurrentRoom.PlayerCount;
+            switch (playerCount)
             {
-                spawnPosition = spawnPosition2;
-                
+                case 0:
+                    spawnPosition = spawnPosition1;
+                    break;
+                case 1:
+                    spawnPosition = spawnPosition2;
+                    break;
+                case 2:
+                    spawnPosition = spawnPosition3;
+                    break;
+                case 3:
+                    spawnPosition = spawnPosition4;
+                    break;
             }
-            else spawnPosition = spawnPosition1;
 
             PhotonNetwork.Instantiate(MetaAvatarPrefab.name, spawnPosition, Quaternion.identity);
         }
