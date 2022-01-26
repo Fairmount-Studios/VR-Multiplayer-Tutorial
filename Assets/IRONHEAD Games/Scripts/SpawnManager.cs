@@ -11,13 +11,23 @@ public class SpawnManager : MonoBehaviour
     [SerializeField]
     GameObject GenericVRPlayerPrefab;
 
-    public Vector3 spawnPosition;
+    public Vector3 spawnPosition1;
+    public Vector3 spawnPosition2;
+    private Vector3 spawnPosition;
     // Start is called before the first frame update
     void Start()
     {
         if (PhotonNetwork.IsConnectedAndReady)
         {
-            //PhotonNetwork.Instantiate(GenericVRPlayerPrefab.name, spawnPosition, Quaternion.identity);
+            // Get spawning point
+            // See if another player exists
+            if (GameObject.Find("Network Avatar(Clone)"))
+            {
+                spawnPosition = spawnPosition2;
+                
+            }
+            else spawnPosition = spawnPosition1;
+
             PhotonNetwork.Instantiate(MetaAvatarPrefab.name, spawnPosition, Quaternion.identity);
         }
     }

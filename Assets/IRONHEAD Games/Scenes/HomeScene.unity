@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.121000335, g: 0.16211382, b: 0.1910234, a: 1}
+  m_IndirectSpecularColor: {r: 0.12099992, g: 0.16211352, b: 0.19102319, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -3059,7 +3059,7 @@ MonoBehaviour:
   _loadUserFromCdn: 1
   _assets:
   - source: 0
-    path: 19
+    path: 0
   _assetPostfixDefault: _rift.glb
   _assetPostfixAndroid: _quest.glb
   _autoCdnRetry: 1

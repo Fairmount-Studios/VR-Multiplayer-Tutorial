@@ -33,7 +33,7 @@ public class AvatarsMultiplayerSync : MonoBehaviour, IPunObservable
         if (!this.m_PhotonView.IsMine)
         {
             
-            //remoteAvatar.ApplyStreamData(this.streamData);
+            remoteAvatar.ApplyStreamData(this.streamData);
             this.remoteAvatarTransform.position = Vector3.Lerp(this.localAvatarTransform.position, this.remoteAvatarTransform.position, 0.2f);
         }
 
