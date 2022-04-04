@@ -57,6 +57,8 @@ namespace Oculus.Avatar2
         private bool _skeletonIsSet = false;
         private bool _initialized = false;
 
+        private bool _entityPreviouslyReady = false;
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -194,8 +196,16 @@ namespace Oculus.Avatar2
 
         private bool EntityIsReady()
         {
-            return _entity && (_entity.CurrentState == OvrAvatarEntity.AvatarState.DefaultAvatar
-                               || _entity.CurrentState == OvrAvatarEntity.AvatarState.UserAvatar);
+            bool isReady = _entity && (_entity.CurrentState == OvrAvatarEntity.AvatarState.DefaultAvatar
+                                       || _entity.CurrentState == OvrAvatarEntity.AvatarState.UserAvatar);
+
+            if (!isReady && _entityPreviouslyReady)
+            {
+                ClearHandPose();
+            }
+
+            _entityPreviouslyReady = isReady;
+            return isReady;
         }
 
         // Take list of joint transforms from hand and convert to native space ovrAvatar2Transforms
@@ -203,22 +213,37 @@ namespace Oculus.Avatar2
         {
             OvrAvatarLog.AssertConstMessage(joints.Count == xforms.Length, "Joint array and native array mismatch",
                 logscope);
+#if OVR_AVATAR_ENABLE_CLIENT_XFORM
+            for (var i = 0; i < joints.Count; i++)
+            {
+                xforms[i] = joints[i].transform;
+            }
+#else
             for (var i = 0; i < joints.Count; i++)
             {
                 CAPI.ovrAvatar2Transform local = joints[i].transform;
                 xforms[i] = local.ConvertSpace();
             }
+#endif
+
         }
 
         // Take list of joint transforms from hand and convert to native space ovrAvatar2Transforms
         private static CAPI.ovrAvatar2Transform[] GetPoseTransforms(List<JointTransform> joints)
         {
             var xforms = new CAPI.ovrAvatar2Transform[joints.Count];
+#if OVR_AVATAR_ENABLE_CLIENT_XFORM
+            for (var i = 0; i < joints.Count; i++)
+            {
+                xforms[i] = joints[i].transform;
+            }
+#else
             for (var i = 0; i < joints.Count; i++)
             {
                 CAPI.ovrAvatar2Transform local = joints[i].transform;
                 xforms[i] = local.ConvertSpace();
             }
+#endif
 
             return xforms;
         }

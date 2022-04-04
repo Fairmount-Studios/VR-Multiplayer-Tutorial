@@ -5,20 +5,20 @@
 
 float4x4 GetJointMatrix(
   in ByteAddressBuffer data_buffer,
-  int joint_matrices_start_address,
-  int joint_index)
+  uint joint_matrices_start_address,
+  uint joint_index)
 {
   // Load 4x float4s, store in matrix, return
-  static const int STRIDE = 16 * 4; // 16 floats in matrix. Each float is 4 bytes.
+  static const uint STRIDE = 16u * 4u; // 16 floats in matrix. Each float is 4 bytes
 
-  const int matrix_data_start_address = mad(joint_index, STRIDE, joint_matrices_start_address);
-  return UnpackFloat16x32(data_buffer, matrix_data_start_address);
+  const uint matrix_data_start_address = mad(joint_index, STRIDE, joint_matrices_start_address);
+  return OvrUnpackFloat16x32(data_buffer, matrix_data_start_address);
 }
 
 void ApplySkinning(
   int max_joints_to_skin,
   in ByteAddressBuffer dynamic_data_buffer,
-  int joint_matrices_start_address,
+  uint joint_matrices_start_address,
   inout float4 position,
   inout float3 normal,
   inout float3 tangent,

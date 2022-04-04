@@ -46,7 +46,7 @@ Shader "Avatar/CombineMorphTargets" {
         nointerpolation float v_Weight : TEXCOORD1;
       };
 
-      int bitfieldExtract10(int value, int offset) {
+      int OvrBitfieldExtract10(int value, int offset) {
         value = value >> offset;
         value &= 0x03ff;
         if ((value & 0x0200) != 0) {
@@ -66,9 +66,9 @@ Shader "Avatar/CombineMorphTargets" {
         float bonusScale = bonusScaleLookup[bonusScaleIndex];
 
         int3 unpackedInt;
-        unpackedInt.x = bitfieldExtract10(packedValue, 0);
-        unpackedInt.y = bitfieldExtract10(packedValue, 10);
-        unpackedInt.z = bitfieldExtract10(packedValue, 20);
+        unpackedInt.x = OvrBitfieldExtract10(packedValue, 0);
+        unpackedInt.y = OvrBitfieldExtract10(packedValue, 10);
+        unpackedInt.z = OvrBitfieldExtract10(packedValue, 20);
 
         float3 unpacked = float3(unpackedInt);
         // convert all to -1 to 1

@@ -21,20 +21,22 @@ namespace Oculus.Skinning.GpuSkinning
      */
     public class OvrAvatarGpuInterpolatedSkinnedRenderable : OvrAvatarGpuSkinnedRenderable
     {
-        private CAPI.ovrAvatar2Transform _skinningOriginFrameZero;
-        private CAPI.ovrAvatar2Transform _skinningOriginFrameOne;
+        public IInterpolationValueProvider InterpolationValueProvider { get; set; }
 
         private MaterialPropertyBlock _matBlock;
 
-        private bool _invertInterpolationValue = false;
+        private CAPI.ovrAvatar2Transform _skinningOriginFrameZero;
+        private CAPI.ovrAvatar2Transform _skinningOriginFrameOne;
 
-        public IInterpolationValueProvider InterpolationValueProvider { get; set; }
+        private bool _invertInterpolationValue;
 
         // 2 "output depth texels" per "atlas packer" slice to interpolate between
         // and enable bilinear filtering to have hardware to the interpolation
         // between depth texels for us
         protected override FilterMode SkinnerOutputFilterMode => FilterMode.Bilinear;
         protected override int SkinnerOutputDepthTexelsPerSlice => 2;
+        protected override bool InterpolateAttributes => true;
+
 
         protected override void Awake()
         {
@@ -42,10 +44,13 @@ namespace Oculus.Skinning.GpuSkinning
             _matBlock = new MaterialPropertyBlock();
         }
 
-        protected override void OnDestroy()
+
+        protected override void Dispose(bool isDisposing)
         {
-            base.OnDestroy();
             _matBlock = null;
+            InterpolationValueProvider = null;
+
+            base.Dispose(isDisposing);
         }
 
         public override void UpdateSkinningOrigin(CAPI.ovrAvatar2Transform skinningOrigin)

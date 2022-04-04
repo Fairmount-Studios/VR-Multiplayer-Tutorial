@@ -49,6 +49,8 @@ namespace Oculus.Skinning.GpuSkinning
             OvrExpandableTextureArray neutralPoseTexture,
             Shader skinningShader)
         {
+            OvrAvatarLog.Assert(skinningShader);
+
             outputFormat = texFormat;
 
             _neutralPoseTex = neutralPoseTexture;

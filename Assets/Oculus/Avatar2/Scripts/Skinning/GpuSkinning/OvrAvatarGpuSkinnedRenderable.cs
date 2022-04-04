@@ -1,7 +1,4 @@
-//#define OVR_EXPLICIT_CONVERT_VEC3
-
 using System;
-using System.Collections;
 using System.Runtime.InteropServices;
 
 using Oculus.Avatar2;
@@ -33,32 +30,24 @@ namespace Oculus.Skinning.GpuSkinning
      */
     public class OvrAvatarGpuSkinnedRenderable : OvrAvatarSkinnedRenderable
     {
-        public const string OVR_VERTEX_FETCH_TEXTURE_KEYWORD = "OVR_VERTEX_FETCH_TEXTURE";
-        public const string OVR_VERTEX_FETCH_TEXTURE_UNORM_KEYWORD = "OVR_VERTEX_FETCH_TEXTURE_UNORM";
+        private const string logScope = "OvrAvatarGpuSkinnedRenderable";
 
-        public static readonly int U_ATTRIBUTE_TEXTURE_PROP_ID = Shader.PropertyToID("u_AttributeTexture");
-        public static readonly int U_ATTRIBUTE_SCALE_BIAS_PROP_ID = Shader.PropertyToID("u_AttributeScaleBias");
-
-        // TODO: Change the following parameter in the native implementation to match:
-        // public static readonly int U_ATTRIBUTE_TEXEL_RECT_PROP_ID = Shader.PropertyToID("u_AttributeTexelRect");
-        public static readonly int U_ATTRIBUTE_TEXEL_X_PROP_ID = Shader.PropertyToID("u_AttributeTexelX");
-        public static readonly int U_ATTRIBUTE_TEXEL_Y_PROP_ID = Shader.PropertyToID("u_AttributeTexelY");
-        public static readonly int U_ATTRIBUTE_TEXEL_W_PROP_ID = Shader.PropertyToID("u_AttributeTexelW");
-        public static readonly int U_ATTRIBUTE_TEXEL_H_PROP_ID = Shader.PropertyToID("u_AttributeTexelH");
-        public static readonly int U_ATTRIBUTE_TEXEL_SLICE_PROP_ID = Shader.PropertyToID("u_AttributeTexelSlice");
-
-        // TODO: Change the following parameter in the native implementation to match:
-        // public static readonly int U_ATTRIBUTE_TEX_INV_SIZE_PROP_ID = Shader.PropertyToID("u_AttributeTexInvSize");
-        public static readonly int U_ATTRIBUTE_TEX_INV_SIZE_W_PROP_ID = Shader.PropertyToID("u_AttributeTexInvSizeW");
-        public static readonly int U_ATTRIBUTE_TEX_INV_SIZE_H_PROP_ID = Shader.PropertyToID("u_AttributeTexInvSizeH");
-        public static readonly int U_ATTRIBUTE_TEX_INV_SIZE_D_PROP_ID = Shader.PropertyToID("u_AttributeTexInvSizeD");
-
-        private Renderer _meshRenderer => rendererComponent;
+        private static AttributePropertyIds _propertyIds = default;
+        private static void CheckPropertyIdInit()
+        {
+            if (!_propertyIds.IsValid)
+            {
+                _propertyIds = new AttributePropertyIds(AttributePropertyIds.InitMethod.PropertyToId);
+            }
+        }
 
         protected float SkinnerLayoutSlice { get; private set; }
 
+        // TODO: SkinnerOutputFilterMode and SkinnerOutputDepthTexelsPerSlice should likely just be member variables?
         protected virtual FilterMode SkinnerOutputFilterMode => FilterMode.Point;
         protected virtual int SkinnerOutputDepthTexelsPerSlice => 1;
+
+        protected override VertexFetchMode VertexFetchType => VertexFetchMode.ExternalTextures;
 
         private protected SkinningOutputFrame SkinnerWriteDestination { get; set; } =
             SkinningOutputFrame.FrameZero;
@@ -77,10 +66,19 @@ namespace Oculus.Skinning.GpuSkinning
             }
         }
 
+        private readonly BufferHandle _bufferHandle = new BufferHandle();
+
         // This is technically configurable, but mostly just for debugging
         [SerializeField]
         [Tooltip("Configuration to override SkinningQuality, otherwise indicates which Quality was selected for this LOD")]
         private OvrSkinningTypes.SkinningQuality _skinningQuality = OvrSkinningTypes.SkinningQuality.Invalid;
+
+        protected override void Awake()
+        {
+            CheckPropertyIdInit();
+
+            base.Awake();
+        }
 
         protected virtual void OnEnable()
         {
@@ -144,7 +142,7 @@ namespace Oculus.Skinning.GpuSkinning
             }
         }
 
-        public override void ApplyMeshPrimitive(OvrAvatarPrimitive primitive)
+        protected internal override void ApplyMeshPrimitive(OvrAvatarPrimitive primitive)
         {
             // The base call adds a mesh filter already and material
             base.ApplyMeshPrimitive(primitive);
@@ -168,22 +166,25 @@ namespace Oculus.Skinning.GpuSkinning
 
         private void ActivateGpuSkinningInMaterial()
         {
+            CopyMaterial();
+
+            var renderMat = rendererComponent.sharedMaterial;
             if (_skinner?.GetOutputTexGraphicFormat() == GraphicsFormat.R16G16B16A16_UNorm)
             {
-                _meshRenderer.sharedMaterial.EnableKeyword(OVR_VERTEX_FETCH_TEXTURE_UNORM_KEYWORD);
-                _meshRenderer.sharedMaterial.DisableKeyword(OVR_VERTEX_FETCH_TEXTURE_KEYWORD);
+                renderMat.EnableKeyword(OVR_VERTEX_FETCH_TEXTURE_UNORM_KEYWORD);
+                renderMat.DisableKeyword(OVR_VERTEX_FETCH_TEXTURE_KEYWORD);
             }
             else
             {
-                _meshRenderer.sharedMaterial.DisableKeyword(OVR_VERTEX_FETCH_TEXTURE_UNORM_KEYWORD);
-                _meshRenderer.sharedMaterial.EnableKeyword(OVR_VERTEX_FETCH_TEXTURE_KEYWORD);
+                renderMat.DisableKeyword(OVR_VERTEX_FETCH_TEXTURE_UNORM_KEYWORD);
+                renderMat.EnableKeyword(OVR_VERTEX_FETCH_TEXTURE_KEYWORD);
             }
         }
 
         private void ApplyGpuSkinningMaterial()
         {
             MaterialPropertyBlock matBlock = new MaterialPropertyBlock();
-            _meshRenderer.GetPropertyBlock(matBlock);
+            rendererComponent.GetPropertyBlock(matBlock);
 
             Texture outputTexture = null;
             CAPI.ovrTextureLayoutResult layout = new CAPI.ovrTextureLayoutResult();
@@ -231,7 +232,7 @@ namespace Oculus.Skinning.GpuSkinning
                 }
             }
 
-            _meshRenderer.SetPropertyBlock(matBlock);
+            rendererComponent.SetPropertyBlock(matBlock);
         }
 
         public override void ApplySkeleton(Transform[] bones)
@@ -250,7 +251,6 @@ namespace Oculus.Skinning.GpuSkinning
             _gpuCombiner.FinishMorphUpdate(_handleInCombiner);
         }
 
-        private const int Matrix4x4Size = 16 * sizeof(float);
         public override bool UpdateJointMatrices(CAPI.ovrAvatar2EntityId entityId, OvrAvatarPrimitive primitive, CAPI.ovrAvatar2PrimitiveRenderInstanceID primitiveInstanceId)
         {
             // TODO: Caller should be handling this check
@@ -297,7 +297,7 @@ namespace Oculus.Skinning.GpuSkinning
             // TODO*: The texture creation should really be part of pipeline
             // and part of the input files from SDK and should be handled via
             // native plugin, but, for now, create via C#
-            if (_mesh)
+            if (HasMesh)
             {
                 var gpuSkinningConfig = GpuSkinningConfiguration.Instance;
 
@@ -351,7 +351,7 @@ namespace Oculus.Skinning.GpuSkinning
                     }
 
                     var indirectTextureFormat = gpuSkinningConfig.IndirectionFormat;
-                    Vector2Int indirectionDims = OvrGpuSkinningUtils.findIndirectionTextureSize(_mesh.vertexCount, numAttributes);
+                    Vector2Int indirectionDims = OvrGpuSkinningUtils.findIndirectionTextureSize(MeshVertexCount, numAttributes);
 
                     int indirectionTexels = indirectionDims.x * indirectionDims.y;
                     Debug.Assert(indirectionTexels > 0, this);
@@ -376,7 +376,7 @@ namespace Oculus.Skinning.GpuSkinning
                             (uint)_gpuCombiner.Width,
                             (uint)_gpuCombiner.Height,
                             _gpuCombiner.GetTexCoordForUnaffectedVertices(),
-                            (uint)_mesh.vertexCount,
+                            (uint)MeshVertexCount,
                             metaData.NumMorphTargetAffectedVerts,
                             metaData.MeshVertexToAffectedIndex
                         );
@@ -622,7 +622,7 @@ namespace Oculus.Skinning.GpuSkinning
             {
                 int coordSizeFromCAPI = (int)CAPI.OvrGpuSkinning_IndirectionTextureInfoTexCoordsSizeInBytes();
                 Debug.Assert(coordSizeFromCAPI == kNumFloatsPerTexCoord * sizeof(float));
-                int numBytes = _mesh.vertexCount * coordSizeFromCAPI;
+                int numBytes = MeshVertexCount * coordSizeFromCAPI;
 
                 IntPtr posDataPtr = Marshal.AllocHGlobal(numBytes);
                 IntPtr normDataPtr = Marshal.AllocHGlobal(numBytes);
@@ -721,7 +721,7 @@ namespace Oculus.Skinning.GpuSkinning
         private OvrSkinningTypes.Handle _handleInCombiner;
         private OvrSkinningTypes.Handle _handleInSkinner;
 
-        private class BufferHandle : IDisposableBuffer
+        private sealed class BufferHandle : IDisposableBuffer
         {
             public BufferHandle() { }
 
@@ -747,9 +747,64 @@ namespace Oculus.Skinning.GpuSkinning
             }
         }
 
-        private readonly BufferHandle _bufferHandle = new BufferHandle();
+        protected static int U_ATTRIBUTE_TEXEL_SLICE_PROP_ID => _propertyIds.TEXEL_SLICE_PROP_ID;
 
-        private const string logScope = "OvrAvatarGpuSkinnedRenderable";
+        private static int U_ATTRIBUTE_TEXTURE_PROP_ID => _propertyIds.TEXTURE_PROP_ID;
+        private static int U_ATTRIBUTE_SCALE_BIAS_PROP_ID => _propertyIds.SCALE_BIAS_PROP_ID;
+
+        // TODO: Change the following parameter in the native implementation to match:
+        // public static readonly int U_ATTRIBUTE_TEXEL_RECT_PROP_ID = Shader.PropertyToID("u_AttributeTexelRect");
+        private static int U_ATTRIBUTE_TEXEL_X_PROP_ID => _propertyIds.TEXEL_X_PROP_ID;
+        private static int U_ATTRIBUTE_TEXEL_Y_PROP_ID => _propertyIds.TEXEL_Y_PROP_ID;
+        private static int U_ATTRIBUTE_TEXEL_W_PROP_ID => _propertyIds.TEXEL_W_PROP_ID;
+        private static int U_ATTRIBUTE_TEXEL_H_PROP_ID => _propertyIds.TEXEL_H_PROP_ID;
+
+        // TODO: Change the following parameter in the native implementation to match:
+        // public static readonly int U_ATTRIBUTE_TEX_INV_SIZE_PROP_ID = Shader.PropertyToID("u_AttributeTexInvSize");
+        private static int U_ATTRIBUTE_TEX_INV_SIZE_W_PROP_ID => _propertyIds.TEX_INV_SIZE_W_PROP_ID;
+        private static int U_ATTRIBUTE_TEX_INV_SIZE_H_PROP_ID => _propertyIds.TEX_INV_SIZE_H_PROP_ID;
+        private static int U_ATTRIBUTE_TEX_INV_SIZE_D_PROP_ID => _propertyIds.TEX_INV_SIZE_D_PROP_ID;
+
+        private const string OVR_VERTEX_FETCH_TEXTURE_KEYWORD = "OVR_VERTEX_FETCH_TEXTURE";
+        private const string OVR_VERTEX_FETCH_TEXTURE_UNORM_KEYWORD = "OVR_VERTEX_FETCH_TEXTURE_UNORM";
+
+        private struct AttributePropertyIds
+        {
+            public readonly int TEXEL_SLICE_PROP_ID;
+
+            public readonly int TEXTURE_PROP_ID;
+            public readonly int SCALE_BIAS_PROP_ID;
+
+            public readonly int TEXEL_X_PROP_ID;
+            public readonly int TEXEL_Y_PROP_ID;
+            public readonly int TEXEL_W_PROP_ID;
+            public readonly int TEXEL_H_PROP_ID;
+
+            public readonly int TEX_INV_SIZE_W_PROP_ID;
+            public readonly int TEX_INV_SIZE_H_PROP_ID;
+            public readonly int TEX_INV_SIZE_D_PROP_ID;
+
+            // These will both be 0 if default initialized, otherwise they are guaranteed unique
+            public bool IsValid => U_ATTRIBUTE_TEXTURE_PROP_ID != U_ATTRIBUTE_SCALE_BIAS_PROP_ID;
+
+            public enum InitMethod { PropertyToId }
+            public AttributePropertyIds(InitMethod initMethod)
+            {
+                TEXEL_SLICE_PROP_ID = Shader.PropertyToID("_OvrAttributeInterpolationValue");
+
+                TEXTURE_PROP_ID = Shader.PropertyToID("u_AttributeTexture");
+                SCALE_BIAS_PROP_ID = Shader.PropertyToID("u_AttributeScaleBias");
+
+                TEXEL_X_PROP_ID = Shader.PropertyToID("u_AttributeTexelX");
+                TEXEL_Y_PROP_ID = Shader.PropertyToID("u_AttributeTexelY");
+                TEXEL_W_PROP_ID = Shader.PropertyToID("u_AttributeTexelW");
+                TEXEL_H_PROP_ID = Shader.PropertyToID("u_AttributeTexelH");
+
+                TEX_INV_SIZE_W_PROP_ID = Shader.PropertyToID("u_AttributeTexInvSizeW");
+                TEX_INV_SIZE_H_PROP_ID = Shader.PropertyToID("u_AttributeTexInvSizeH");
+                TEX_INV_SIZE_D_PROP_ID = Shader.PropertyToID("u_AttributeTexInvSizeD");
+            }
+        }
 
 #if UNITY_EDITOR
         void OnDrawGizmosSelected()

@@ -136,7 +136,7 @@ namespace Oculus.Avatar2
         /// @see ovrAvatar2InputControlState
         ///
         [StructLayout(LayoutKind.Sequential)]
-        public unsafe struct ovrAvatar2InputTrackingState
+        public struct ovrAvatar2InputTrackingState
         {
             // True if the headset is currently tracked and valid.
             [MarshalAs(UnmanagedType.U1)]

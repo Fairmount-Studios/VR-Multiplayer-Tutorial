@@ -1,4 +1,5 @@
 using Oculus.Avatar2;
+using UnityEngine;
 using Node = UnityEngine.XR.XRNode;
 
 /*
@@ -25,22 +26,20 @@ public class SampleInputTrackingDelegate : OvrAvatarInputTrackingDelegate
 
         if (_ovrCameraRig)
         {
-            inputTrackingState = new OvrAvatarInputTrackingState
-            {
-                headsetActive = true,
-                leftControllerActive = leftControllerActive,
-                rightControllerActive = rightControllerActive,
-                leftControllerVisible = false,
-                rightControllerVisible = false,
-                headset = _ovrCameraRig.centerEyeAnchor,
-                leftController = _ovrCameraRig.leftControllerAnchor,
-                rightController = _ovrCameraRig.rightControllerAnchor
-            };
+            inputTrackingState = default;
+            inputTrackingState.headsetActive = true;
+            inputTrackingState.leftControllerActive = leftControllerActive;
+            inputTrackingState.rightControllerActive = rightControllerActive;
+            inputTrackingState.leftControllerVisible = false;
+            inputTrackingState.rightControllerVisible = false;
+            inputTrackingState.headset = _ovrCameraRig.centerEyeAnchor;
+            inputTrackingState.leftController = _ovrCameraRig.leftControllerAnchor;
+            inputTrackingState.rightController = _ovrCameraRig.rightControllerAnchor;
             return true;
         }
         else if (OVRNodeStateProperties.IsHmdPresent())
         {
-            inputTrackingState = new OvrAvatarInputTrackingState();
+            inputTrackingState = default;
             inputTrackingState.headsetActive = true;
             inputTrackingState.leftControllerActive = leftControllerActive;
             inputTrackingState.rightControllerActive = rightControllerActive;
@@ -53,16 +52,29 @@ public class SampleInputTrackingDelegate : OvrAvatarInputTrackingDelegate
                 inputTrackingState.headset.position = headPos;
 
             }
+            else
+            {
+                inputTrackingState.headset.position = Vector3.zero;
+            }
+
             if (OVRNodeStateProperties.GetNodeStatePropertyQuaternion(Node.CenterEye, NodeStatePropertyType.Orientation,
                 OVRPlugin.Node.EyeCenter, OVRPlugin.Step.Render, out var headRot))
             {
                 inputTrackingState.headset.orientation = headRot;
             }
+            else
+            {
+                inputTrackingState.headset.orientation = Quaternion.identity;
+            }
+
+            inputTrackingState.headset.scale = Vector3.one;
 
             inputTrackingState.leftController.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.LTouch);
             inputTrackingState.rightController.position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
             inputTrackingState.leftController.orientation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.LTouch);
             inputTrackingState.rightController.orientation = OVRInput.GetLocalControllerRotation(OVRInput.Controller.RTouch);
+            inputTrackingState.leftController.scale = Vector3.one;
+            inputTrackingState.rightController.scale = Vector3.one;
             return true;
         }
 

@@ -106,9 +106,6 @@ Shader "Avatar/Khronos"
             // BRDF_LUT_MODES: Must match the Properties specified above
             #pragma multi_compile BRDF_LUT_MODE_ON BRDF_LUT_MODE_OFF
 
-            // Required to support Avatar SDK GPU Skinning
-            #pragma multi_compile ___ OVR_VERTEX_FETCH_TEXTURE OVR_VERTEX_FETCH_TEXTURE_UNORM
-            #pragma multi_compile __ OVR_VERTEX_HAS_TANGENTS
             #pragma target 3.5 // necessary for use of SV_VertexID
 
             // Palettization modes for Avatar FBX tool
@@ -170,9 +167,6 @@ Shader "Avatar/Khronos"
             // BRDF_LUT_MODES: Must match the Properties specified above
             #pragma multi_compile BRDF_LUT_MODE_ON BRDF_LUT_MODE_OFF
 
-            // Required to support Avatar SDK GPU Skinning
-            #pragma multi_compile ___ OVR_VERTEX_FETCH_TEXTURE OVR_VERTEX_FETCH_TEXTURE_UNORM
-            #pragma multi_compile __ OVR_VERTEX_HAS_TANGENTS
             #pragma target 3.5 // necessary for use of SV_VertexID
 
             // Include the Vertex Shader HERE
@@ -214,9 +208,6 @@ Shader "Avatar/Khronos"
             // BRDF_LUT_MODES: Must match the Properties specified above
             #pragma multi_compile BRDF_LUT_MODE_ON BRDF_LUT_MODE_OFF
 
-            // Required to support Avatar SDK GPU Skinning
-            #pragma multi_compile ___ OVR_VERTEX_FETCH_TEXTURE OVR_VERTEX_FETCH_TEXTURE_UNORM
-            #pragma multi_compile __ OVR_VERTEX_HAS_TANGENTS
             #pragma target 3.5 // necessary for use of SV_VertexID
 
             // Palettization modes for Avatar FBX tool

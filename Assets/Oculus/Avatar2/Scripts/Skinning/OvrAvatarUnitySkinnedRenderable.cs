@@ -21,8 +21,6 @@ namespace Oculus.Skinning
      */
     public class OvrAvatarUnitySkinnedRenderable : OvrAvatarSkinnedRenderable
     {
-        private SkinnedMeshRenderer _skinnedRenderer;
-
         [SerializeField]
         [Tooltip("Configuration to override SkinQuality, otherwise indicates which Quality was selected for this LOD")]
         private SkinQuality _skinQuality = SkinQuality.Auto;
@@ -47,9 +45,11 @@ namespace Oculus.Skinning
             }
         }
 
-        private uint _morphCount;
+        private SkinnedMeshRenderer _skinnedRenderer;
 
         private float[] _morphBuffer;
+        private uint _morphCount;
+
         private float[] MorphBuffer
         {
             get
@@ -72,13 +72,17 @@ namespace Oculus.Skinning
             _skinnedRenderer = AddRenderer<SkinnedMeshRenderer>();
         }
 
-        public override void ApplyMeshPrimitive(OvrAvatarPrimitive primitive)
+        protected internal override void ApplyMeshPrimitive(OvrAvatarPrimitive primitive)
         {
             base.ApplyMeshPrimitive(primitive);
 
-            _skinnedRenderer.sharedMesh = _mesh;
+            _skinnedRenderer.sharedMesh = MyMesh;
+            _skinnedRenderer.localBounds = primitive.hasBounds ? primitive.mesh.bounds : FixedBounds;
 
-            _skinQuality = _skinQuality == SkinQuality.Auto ? QualityForLODIndex(primitive.HighestQualityLODIndex) : _skinQuality;
+            if (_skinQuality == SkinQuality.Auto)
+            {
+                _skinQuality = QualityForLODIndex(primitive.HighestQualityLODIndex);
+            }
             _skinnedRenderer.quality = _skinQuality;
 
             _morphCount = primitive.morphTargetCount;
@@ -124,15 +128,22 @@ namespace Oculus.Skinning
             return OvrAvatarManager.Instance.GetUnitySkinQualityForLODIndex(lodIndex);
         }
 
+        protected override void Dispose(bool isMainThread)
+        {
+            _skinnedRenderer = null;
+            _morphBuffer = null;
+            _bufferHandle.Dispose();
+
+            base.Dispose(isMainThread);
+        }
+
         // TODO: This is disposed via the `Cleanup` method
 #pragma warning disable CA2213 // Disposable fields should be disposed
         private readonly BufferHandle _bufferHandle = new BufferHandle();
 #pragma warning restore CA2213 // Disposable fields should be disposed
 
-        private class BufferHandle : IDisposableBuffer
+        private sealed class BufferHandle : IDisposableBuffer
         {
-            public BufferHandle() { }
-
             private GCHandle _morphHandle;
 
             public void SetMorphBuffer(float[] buffer)
@@ -142,13 +153,7 @@ namespace Oculus.Skinning
                 _morphHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             }
 
-            public IntPtr BufferPtr
-            {
-                get
-                {
-                    return _morphHandle.AddrOfPinnedObject();
-                }
-            }
+            public IntPtr BufferPtr => _morphHandle.AddrOfPinnedObject();
 
             public void Dispose()
             {
@@ -159,8 +164,12 @@ namespace Oculus.Skinning
             }
         }
 
+        // TODO: FixedBounds should definitely be removed ASAP
+        private static Bounds FixedBounds
+            => new Bounds(new Vector3(0f, 0.5f, 0.0f), new Vector3(2.0f, 2.0f, 2.0f));
+
 #if UNITY_EDITOR
-        protected void OnValidate()
+        protected virtual void OnValidate()
         {
             UpdateSkinQuality();
         }

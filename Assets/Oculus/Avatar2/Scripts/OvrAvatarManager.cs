@@ -1,5 +1,6 @@
 #define DISABLE_OVR_FILE_SYSTEM
 
+
 using AOT;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,9 @@ using Unity.Jobs;
 using UnityEngine.Events;
 using UnityEngine.Profiling;
 using UnityEngine.XR;
+
+
+
 #if UNITY_EDITOR
 using System.Runtime.CompilerServices;
 
@@ -48,7 +52,7 @@ namespace Oculus.Avatar2
      *   how many concurrent loads are permissible
      *   and dynamic streaming constraints.
      * - Specify the locations of assets to preload.
-     *   for each platform (Quest, Rift).
+     *   for each platform (Quest, Quest2, Rift).
      * - Select shader and material options.
      * - Choose skinning and tracking behaviours.
      * @see OvrAvatarEntity
@@ -75,6 +79,7 @@ namespace Oculus.Avatar2
             BadParameter = 1,
             SendFailed = 2,
             RequestFailed = 3,
+            RequestCancelled = 4,
 
             HasNoAvatar = 8,
             HasAvatar = 9,
@@ -89,6 +94,7 @@ namespace Oculus.Avatar2
             BadParameter = 1,
             SendFailed = 2,
             RequestFailed = 3,
+            RequestCancelled = 4,
 
             AvatarHasNotChanged = 8,
             AvatarHasChanged = 9,
@@ -188,6 +194,7 @@ Roughly equal to number of cores used")]
 #pragma warning disable CS0414
         [SerializeField] private string zipPostfixDefault = "_Rift";
         [SerializeField] private string zipPostfixAndroid = "_Quest";
+        [SerializeField] private string zipPostfixQuest2 = "_Quest2";
 #pragma warning restore CS0414
 
         [Tooltip("A list of platform independent zip files to be loaded upon initializing." +
@@ -209,6 +216,8 @@ Roughly equal to number of cores used")]
         [Header("Experimental")]
         [Tooltip("Update critical joints using Unity Transform jobs, may help reduce main thread CPU usage")]
         [SerializeField] private bool _useCriticalJointJobs = false;
+        [Tooltip("Connect the avatar runtime to the Avatar Monitor pane in Unity to show avatar SDK data")]
+        [SerializeField] private bool _enableDevTools = false;
 
         [Header("Debug")]
         [SerializeField] private CAPI.ovrAvatar2LogLevel _ovrLogLevel = CAPI.ovrAvatar2LogLevel.Verbose;
@@ -217,7 +226,6 @@ Roughly equal to number of cores used")]
         private OvrAvatarEntity[] _entityUpdateArray = Array.Empty<OvrAvatarEntity>();
         private bool _entityUpdateArrayChanged = false;
 
-        private readonly Dictionary<string, CAPI.ovrAvatar2Id> _pathToAssetMap = new Dictionary<string, CAPI.ovrAvatar2Id>();
         private readonly Dictionary<CAPI.ovrAvatar2Id, OvrAvatarAssetBase> _assetMap = new Dictionary<CAPI.ovrAvatar2Id, OvrAvatarAssetBase>();
         private readonly Dictionary<CAPI.ovrAvatar2Id, OvrAvatarResourceLoader> _resourcesByID = new Dictionary<CAPI.ovrAvatar2Id, OvrAvatarResourceLoader>();
 
@@ -236,6 +244,9 @@ Roughly equal to number of cores used")]
 
         ///  Whether critical joints update using Unity Transform jobs, which may help reduce main thread CPU usage
         public bool UseCriticalJointJobs => _useCriticalJointJobs;
+
+        // Whether to activate the arbiter client sending data
+        public bool EnableDevTools => _enableDevTools;
 
         ///
         public IOvrAvatarHandTrackingDelegate DefaultHandTrackingDelegate { get; private set; }
@@ -268,6 +279,8 @@ Roughly equal to number of cores used")]
             // - "UnityException: GetGraphicsShaderLevel is not allowed to be called from a MonoBehaviour constructor
             // (or instance field initializer), call it in Awake or Start instead. Called from MonoBehaviour 'OvrAvatarManager'."
             _shaderLevelSupport = SystemInfo.graphicsShaderLevel;
+
+            ValidateSupportedSkinners();
 
             if (!OvrTime.HasLimitedBudget)
             {
@@ -312,19 +325,19 @@ Roughly equal to number of cores used")]
                 initInfo.defaultModelColor.y = _defaultModelColor.g;
                 initInfo.defaultModelColor.z = _defaultModelColor.b;
                 initInfo.clientName = clientName;
+                // Transform from SDK space (-Z forward) to Unity space (+Z forward)
+#if OVR_AVATAR_ENABLE_CLIENT_XFORM
+                initInfo.clientSpaceRightAxis = UnityEngine.Vector3.right;
+                initInfo.clientSpaceUpAxis = UnityEngine.Vector3.up;
+                initInfo.clientSpaceForwardAxis = UnityEngine.Vector3.forward;
+#else
+                initInfo.clientSpaceRightAxis = UnityEngine.Vector3.right;
+                initInfo.clientSpaceUpAxis = UnityEngine.Vector3.up;
+                initInfo.clientSpaceForwardAxis = -UnityEngine.Vector3.forward;
+#endif
             }
 
-            OvrAvatarLog.LogInfo($"Attempting to load ovrbody lib", logScope, this);
-            var ovrBodyLoadResult = OvrBody.LoadLibrary();
-            if (ovrBodyLoadResult == OvrBody.OvrBodyLoadLibraryResult.Success)
-            {
-                OvrAvatarLog.LogInfo("Loaded libovrbody", logScope, this);
-            }
-            else
-            {
-                OvrAvatarLog.LogError($"Unable to load libovrbody - ({ovrBodyLoadResult})", logScope, this);
-            }
-
+#if !OVRPLUGIN_UNSUPPORTED_PLATFORM
             OvrAvatarLog.LogInfo($"Attempting to initialize ovrplugintracking lib", logScope, this);
             if (OvrPluginTracking.Initialize(initInfo.loggingCallback, initInfo.loggingContext))
             {
@@ -338,10 +351,12 @@ Roughly equal to number of cores used")]
             {
                 OvrAvatarLog.LogInfo("Failed to initialize  ovrplugintracking lib", logScope, this);
             }
+#endif
 
             // This is actually used even w/out GPUSkinning as part of skinning mode selection
             // NOTE: That is rather ugly, make that not the case or atleast rename
             GpuSkinningConfiguration.Instantiate();
+            GpuSkinningConfiguration.Instance.ValidateFallbackSkinner(UnitySkinnerSupported, OvrGPUSkinnerSupported);
 
             // initialize the GPU Skinning dll
             bool gpuSkinningInitSuccess = false;
@@ -385,6 +400,16 @@ Roughly equal to number of cores used")]
             {
                 OvrAvatarLog.LogError("ovrAvatar2_Initialize Failed", logScope, this);
                 return;
+            }
+
+            // Enable the tools link so we send data to the Avatar Resource Monitor window
+            // TODO: fix root cause of this check causing a crash
+            //if (OvrAvatarManager.Instance.EnableDevTools)
+            {
+                if (CAPI.ovrAvatar2_EnableDevToolsLink() != CAPI.ovrAvatar2Result.Success)
+                {
+                    OvrAvatarLog.LogWarning("Failed to enable dev tools link", logScope, this);
+                }
             }
 
             OvrAvatarLog.LogVerbose($"libovravatar2 initialized with version: {CAPI.OvrAvatar_GetVersionString()}", logScope, this);
@@ -563,7 +588,6 @@ Roughly equal to number of cores used")]
             }
 
             _entityUpdateArray = Array.Empty<OvrAvatarEntity>();
-            _pathToAssetMap.Clear();
             _assetMap.Clear();
 
             _ShutdownSingleton<GpuSkinningConfiguration>(GpuSkinningConfiguration.Instance);
@@ -617,7 +641,7 @@ Roughly equal to number of cores used")]
         public void AddZipSource(string file)
         {
             string filePath = GetAssetPathForFile(file);
-            string postfix = IsAndroidStandalone ? zipPostfixAndroid : zipPostfixDefault;
+            string postfix = GetPlatformZipPostfix();
 
             if (postfix.Length > 0)
             {
@@ -673,6 +697,12 @@ Roughly equal to number of cores used")]
             if (userId == 0)
             {
                 OvrAvatarLog.LogError("UserHasAvatarAsync failed: userId must not be 0", logScope, this);
+                return HasAvatarRequestResultCode.BadParameter;
+            }
+
+            if (!OvrAvatarEntitlement.AccessTokenIsValid)
+            {
+                OvrAvatarLog.LogError("UserHasAvatarAsync failed: no valid access token", logScope, this);
                 return HasAvatarRequestResultCode.BadParameter;
             }
 
@@ -737,6 +767,7 @@ Roughly equal to number of cores used")]
                 return HasAvatarChangedRequestResultCode.RequestFailed;
             }
 
+            // ReSharper disable once InvertIf
             if (!requestResult.resultBool.HasValue)
             {
                 OvrAvatarLog.LogError($"ovrAvatar2_HasAvatarChanged encountered an unexpected error", logScope, this);
@@ -819,14 +850,35 @@ Roughly equal to number of cores used")]
             }
         }
 
+        public string GetPlatformGLBPostfix()
+        {
+            return GetPlatformZipPostfix().ToLower();
+        }
+
+        public static CAPI.ovrAvatar2Platform GetPlatform()
+        {
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            return IsAndroidStandalone ? GetAndroidStandalonePlatform() : CAPI.ovrAvatar2Platform.PC;
+        }
+
         #endregion
 
         #region Private Functions
 
-        private CAPI.ovrAvatar2Platform GetPlatform()
+        private string GetPlatformZipPostfix()
         {
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            return IsAndroidStandalone ? GetAndroidStandalonePlatform() : CAPI.ovrAvatar2Platform.PC;
+            switch (GetPlatform())
+            {
+                case CAPI.ovrAvatar2Platform.PC:
+                    return zipPostfixDefault;
+                case CAPI.ovrAvatar2Platform.Quest:
+                    return zipPostfixAndroid;
+                case CAPI.ovrAvatar2Platform.Quest2:
+                    return zipPostfixQuest2;
+                default:
+                    OvrAvatarLog.LogError($"Error unknown platform for zip prefix, using default. Platform was {GetPlatform()}.", logScope, this);
+                    return IsAndroidStandalone ? zipPostfixAndroid : zipPostfixDefault;
+            }
         }
 
         private string GetAssetPathForFile(string file)
@@ -835,7 +887,7 @@ Roughly equal to number of cores used")]
             return IsAndroidStandalone ? file : Path.Combine(Application.streamingAssetsPath, file);
         }
 
-        private CAPI.ovrAvatar2Platform GetAndroidStandalonePlatform()
+        private static CAPI.ovrAvatar2Platform GetAndroidStandalonePlatform()
         {
             var deviceName = SystemInfo.deviceName;
             var isQuestDevice = deviceName.IndexOf("Quest", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -922,35 +974,12 @@ Roughly equal to number of cores used")]
 
         #region Asset Loading
 
-        public static CAPI.ovrAvatar2Id GetIdIfPathIsLoaded(string path)
-        {
-            if (Instance._pathToAssetMap.TryGetValue(path, out CAPI.ovrAvatar2Id assetId))
-            {
-                return assetId;
-            }
-
-            return CAPI.ovrAvatar2Id.Invalid;
-        }
-
-        public static void AddLoadedPath(string path, CAPI.ovrAvatar2Id assetId)
-        {
-            if (!Instance._pathToAssetMap.ContainsKey(path))
-            {
-                Instance._pathToAssetMap.Add(path, assetId);
-            }
-        }
-
-        public static void RemoveLoadedPath(string path, CAPI.ovrAvatar2Id assetId)
-        {
-            Instance._pathToAssetMap.Remove(path);
-        }
-
-        public static bool IsOvrAvatarAssetLoaded(CAPI.ovrAvatar2Id assetId)
+        internal static bool IsOvrAvatarAssetLoaded(CAPI.ovrAvatar2Id assetId)
         {
             return OvrAvatarManager.Instance._assetMap.ContainsKey(assetId);
         }
 
-        public static bool GetOvrAvatarAsset<T>(CAPI.ovrAvatar2Id assetId, out T asset) where T : OvrAvatarAssetBase
+        internal static bool GetOvrAvatarAsset<T>(CAPI.ovrAvatar2Id assetId, out T asset) where T : OvrAvatarAssetBase
         {
             if (Instance._assetMap.TryGetValue(assetId, out var foundAsset))
             {
@@ -1103,7 +1132,7 @@ Roughly equal to number of cores used")]
             }
         }
 
-#endregion // Avatar Loading
+        #endregion // Avatar Loading
 
         private void QueueResourceLoad(OvrAvatarResourceLoader loader)
         {

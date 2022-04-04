@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Oculus.Avatar2;
 using Oculus.Platform;
 using UnityEngine;
@@ -27,17 +28,11 @@ public class SampleAvatarEntity : OvrAvatarEntity
 
     [Header("Sample Avatar Entity")]
     [SerializeField] private bool _loadUserFromCdn = true;
+    [SerializeField] private bool _deferLoading = false;
 
     [Header("Assets")]
     [Tooltip("Asset paths to load, and whether each asset comes from a preloaded zip file or directly from StreamingAssets")]
-    [SerializeField] private List<AssetData> _assets = new List<AssetData> { new AssetData {source = AssetSource.Zip, path = "0"} };
-
-#pragma warning disable CS0414
-    [Tooltip("Asset suffix for non-Android platforms")]
-    [SerializeField] private string _assetPostfixDefault = "_rift.glb";
-    [Tooltip("Asset suffix for Android platforms")]
-    [SerializeField] private string _assetPostfixAndroid = "_quest.glb";
-#pragma warning restore CS0414
+    [SerializeField] private List<AssetData> _assets = new List<AssetData> { new AssetData { source = AssetSource.Zip, path = "0" } };
 
     [Header("CDN")]
     [Tooltip("Automatically retry LoadUser download request on failure")]
@@ -74,15 +69,20 @@ public class SampleAvatarEntity : OvrAvatarEntity
 
     private bool HasLocalAvatarConfigured => _assets.Count > 0;
 
+    private Stopwatch _loadTime = new Stopwatch();
+
     protected IEnumerator Start()
     {
-        if (_loadUserFromCdn)
+        if (!_deferLoading)
         {
-            yield return LoadCdnAvatar();
-        }
-        else
-        {
-            LoadLocalAvatar();
+            if (_loadUserFromCdn)
+            {
+                yield return LoadCdnAvatar();
+            }
+            else
+            {
+                LoadLocalAvatar();
+            }
         }
 
         switch (_overrideStreamLod)
@@ -139,32 +139,44 @@ public class SampleAvatarEntity : OvrAvatarEntity
             yield return null;
         }
 
-        // Get User ID
-        bool getUserIdComplete = false;
-        Users.GetLoggedInUser().OnComplete(message =>
+        // user ID == 0 means we want to load logged in user avatar from CDN
+        if (_userId == 0)
         {
-            if (!message.IsError)
+            // Get User ID
+            bool getUserIdComplete = false;
+            Users.GetLoggedInUser().OnComplete(message =>
             {
-                _userId = message.Data.ID;
-            }
-            else
-            {
-                var e = message.GetError();
-                OvrAvatarLog.LogError($"Error loading CDN avatar: {e.Message}. Falling back to local avatar", logScope);
-            }
+                if (!message.IsError)
+                {
+                    _userId = message.Data.ID;
+                }
+                else
+                {
+                    var e = message.GetError();
+                    OvrAvatarLog.LogError($"Error loading CDN avatar: {e.Message}. Falling back to local avatar", logScope);
+                }
 
-            getUserIdComplete = true;
-        });
+                getUserIdComplete = true;
+            });
 
-        while (!getUserIdComplete) { yield return null; }
+            while (!getUserIdComplete) { yield return null; }
+        }
 
         yield return LoadUserAvatar();
     }
 
     public void LoadRemoteUserCdnAvatar(ulong userId)
     {
+        StartLoadTimeCounter();
         _userId = userId;
-        StartCoroutine(LoadUserAvatar());
+        StartCoroutine(LoadCdnAvatar());
+    }
+
+    public void LoadLoggedInUserCdnAvatar()
+    {
+        StartLoadTimeCounter();
+        _userId = 0;
+        StartCoroutine(LoadCdnAvatar());
     }
 
     private IEnumerator LoadUserAvatar()
@@ -186,7 +198,7 @@ public class SampleAvatarEntity : OvrAvatarEntity
             return;
         }
 
-        string assetPostfix = OvrAvatarManager.IsAndroidStandalone ? _assetPostfixAndroid : _assetPostfixDefault;
+        string assetPostfix = OvrAvatarManager.Instance.GetPlatformGLBPostfix() + ".glb";
 
         // Zip asset paths are relative to the inside of the zip.
         // Zips can be loaded from the OvrAvatarManager at startup or by calling OvrAvatarManager.Instance.AddZipSource
@@ -197,14 +209,14 @@ public class SampleAvatarEntity : OvrAvatarEntity
             path[0] = asset.path + assetPostfix;
             switch (asset.source)
             {
-            case AssetSource.Zip:
-                LoadAssetsFromZipSource(path);
-                break;
-            case AssetSource.StreamingAssets:
-                LoadAssetsFromStreamingAssets(path);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+                case AssetSource.Zip:
+                    LoadAssetsFromZipSource(path);
+                    break;
+                case AssetSource.StreamingAssets:
+                    LoadAssetsFromStreamingAssets(path);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
     }
@@ -222,7 +234,7 @@ public class SampleAvatarEntity : OvrAvatarEntity
         Teardown();
         CreateEntity();
 
-        string assetPostfix = OvrAvatarManager.IsAndroidStandalone ? _assetPostfixAndroid : _assetPostfixDefault;
+        string assetPostfix = OvrAvatarManager.Instance.GetPlatformGLBPostfix() + ".glb";
 
         string[] combinedPaths = new string[newAssetPaths.Length];
         for (var index = 0; index < newAssetPaths.Length; index++)
@@ -241,6 +253,14 @@ public class SampleAvatarEntity : OvrAvatarEntity
             default:
                 throw new ArgumentOutOfRangeException();
         }
+    }
+
+    public bool LoadPreset(int preset, string namePrefix = "")
+    {
+        StartLoadTimeCounter();
+        string assetPostfix = OvrAvatarManager.Instance.GetPlatformGLBPostfix();
+        var assetPath = $"{namePrefix}{preset}{assetPostfix}.glb";
+        return LoadAssetsFromZipSource(new string[] { assetPath });
     }
 
     #region Fade/Desat
@@ -402,10 +422,18 @@ public class SampleAvatarEntity : OvrAvatarEntity
                         , logScope, this);
                     break;
 
+                case OvrAvatarManager.HasAvatarRequestResultCode.RequestCancelled:
+                    continueRetries = false;
+
+                    OvrAvatarLog.LogInfo(
+                        "HasAvatar request cancelled."
+                        , logScope, this);
+                    break;
+
                 case OvrAvatarManager.HasAvatarRequestResultCode.UnknownError:
                 default:
                     OvrAvatarLog.LogError(
-                        "An unknown error occurred. Falling back to local avatar."
+                        $"An unknown error occurred {hasAvatarRequest.Result}. Falling back to local avatar."
                         , logScope, this);
                     break;
             }
@@ -486,6 +514,22 @@ public class SampleAvatarEntity : OvrAvatarEntity
             UserHasNoAvatarFallback();
         }
     }
+
+    private void StartLoadTimeCounter()
+    {
+        _loadTime.Start();
+
+        OnUserAvatarLoadedEvent.AddListener((OvrAvatarEntity entity) =>
+        {
+            _loadTime.Stop();
+        });
+    }
+
+    public long GetLoadTimeMs()
+    {
+        return _loadTime.ElapsedMilliseconds;
+    }
+
     #endregion // Retry
 
     #region Change Check
@@ -530,6 +574,16 @@ public class SampleAvatarEntity : OvrAvatarEntity
                         "Check avatar changed request failed."
                         , logScope, this);
                     break;
+
+                case OvrAvatarManager.HasAvatarChangedRequestResultCode.RequestCancelled:
+                    OvrAvatarLog.LogInfo(
+                        "Check avatar changed request cancelled."
+                        , logScope, this);
+
+                    // Stop retrying, this entity has most likely been destroyed
+                    continueChecking = false;
+                    break;
+
                 case OvrAvatarManager.HasAvatarChangedRequestResultCode.AvatarHasNotChanged:
                     OvrAvatarLog.LogVerbose(
                         "Avatar has not changed."
@@ -574,7 +628,7 @@ public class SampleAvatarEntity : OvrAvatarEntity
         }
         else
         {
-            Debug.LogError("Failed to get gaze pos");
+            OvrAvatarLog.LogError("Failed to get gaze pos");
         }
     }
 #endif

@@ -71,6 +71,9 @@ namespace Oculus.Avatar2
             CdnLoadInProgress,
             NoAssetProfile,
             SpecRequestFailed,
+            SpecParseFailed,
+            SpecRequestCancelled,
+            MissingAvatar,
             SpecHadInvalidAnimSet,
             SpecHadInvalidModel,
             InvalidUri,
@@ -297,6 +300,9 @@ namespace Oculus.Avatar2
         public static extern CAPI.ovrAvatar2Result ovrAvatar2Asset_GetViewFlags(
             ovrAvatar2Id primitiveId, out ovrAvatar2EntityViewFlags viewFlags);
 
+        [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl)]
+        public static extern CAPI.ovrAvatar2Result ovrAvatar2Asset_GetSubMeshInclusionFlags(
+            ovrAvatar2Id primitiveId, out ovrAvatar2EntitySubMeshInclusionFlags subMeshInclusionFlags);
 
         //-----------------------------------------------------------------
         //
@@ -444,6 +450,9 @@ namespace Oculus.Avatar2
         public static extern unsafe CAPI.ovrAvatar2Result ovrAvatar2Asset_GetPrimitiveMaterialName(
             ovrAvatar2Id primitiveId, byte* nameBuffer, UInt32 bufferByteSize);
 
+        [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern unsafe CAPI.ovrAvatar2Result ovrAvatar2Asset_DeduceMaterialSubMeshFromName(
+            ovrAvatar2EntitySubMeshInclusionFlags* destType, byte* matName);
 
         //-----------------------------------------------------------------
         //
@@ -480,6 +489,7 @@ namespace Oculus.Avatar2
             public ovrAvatar2Vector2f maxUVValues; // vertex UV max values
             public ovrAvatar2Vector3f minValues; // vertex position min values
             public ovrAvatar2Vector3f maxValues; // vertex position max values
+            public ovrAvatar2EntitySubMeshInclusionFlags inclusionFlags; // indicates the type of content in this submesh
         }
 
         [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl)]

@@ -173,10 +173,13 @@ namespace Oculus.Avatar2
 
         protected override void Initialize()
         {
+            // Set up params for native LOD system - valuea are taken from Joe's test case
+            CAPI.ovrAvatar2LOD_SetDistribution(75000, 3.0f);
+
             base.Initialize();
 
             var lods = UnityEngine.Object.FindObjectsOfType<AvatarLOD>();
-            foreach (AvatarLOD lod in lods)
+            foreach (var lod in lods)
             {
                 AddLOD(lod);
             }
@@ -884,12 +887,12 @@ namespace Oculus.Avatar2
             if (!currentCamera_.camera || (!currentCamera_.camera.isActiveAndEnabled && currentCamera_.camera != UnityEditor.SceneView.lastActiveSceneView.camera))
             {
 #endif
-                currentCamera_.camera = ActiveLODCamera;
+            currentCamera_.camera = ActiveLODCamera;
 
-                if (!currentCamera_.camera)
-                {
-                    currentCamera_.camera = FindVRCamera();
-                }
+            if (!currentCamera_.camera)
+            {
+                currentCamera_.camera = FindVRCamera();
+            }
 #if UNITY_EDITOR
             }
 #endif

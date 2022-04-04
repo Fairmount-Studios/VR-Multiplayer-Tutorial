@@ -19,11 +19,13 @@ public class TestSceneSwitcher : MonoBehaviour
         public OVRInput.Button buttonMask;
     }
 
-    [SerializeField] private InputMask _nextSceneInput = new InputMask
-        {controllerMask = OVRInput.Controller.RTouch, buttonMask = OVRInput.Button.One};
+    [SerializeField]
+    private InputMask _nextSceneInput = new InputMask
+    { controllerMask = OVRInput.Controller.RTouch, buttonMask = OVRInput.Button.One };
 
-    [SerializeField] private InputMask _prevSceneInput = new InputMask
-        {controllerMask = OVRInput.Controller.LTouch, buttonMask = OVRInput.Button.One};
+    [SerializeField]
+    private InputMask _prevSceneInput = new InputMask
+    { controllerMask = OVRInput.Controller.LTouch, buttonMask = OVRInput.Button.One };
 
     private void Awake()
     {
@@ -38,13 +40,17 @@ public class TestSceneSwitcher : MonoBehaviour
     private void Update()
     {
         int sceneChange = 0;
-        if (OVRInput.GetDown(_nextSceneInput.buttonMask, _nextSceneInput.controllerMask))
+
+        if (OVRInput.GetActiveController() != OVRInput.Controller.Hands)
         {
-            sceneChange = 1;
-        }
-        else if (OVRInput.GetDown(_prevSceneInput.buttonMask, _prevSceneInput.controllerMask))
-        {
-            sceneChange = -1;
+            if (OVRInput.GetDown(_nextSceneInput.buttonMask, _nextSceneInput.controllerMask))
+            {
+                sceneChange = 1;
+            }
+            else if (OVRInput.GetDown(_prevSceneInput.buttonMask, _prevSceneInput.controllerMask))
+            {
+                sceneChange = -1;
+            }
         }
 
         if (sceneChange != 0)

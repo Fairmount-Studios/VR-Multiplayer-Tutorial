@@ -27,16 +27,25 @@ namespace Oculus.Avatar2
      * and across avatar renderables.
      * @see OvrAvatarRenderable
      */
-    public class OvrAvatarPrimitive : OvrAvatarAsset<CAPI.ovrAvatar2Primitive>
+    public sealed class OvrAvatarPrimitive : OvrAvatarAsset<CAPI.ovrAvatar2Primitive>
     {
+        private const string primitiveLogScope = "ovrAvatarPrimitive";
         //:: Internal
 
-        public const int LOD_INVALID = -1;
-        public const float LOD_COVERAGE_INVALID = -1.0f;
-        private const int LOD_COUNT = 5;
-        private static readonly float[] LOD_COVERAGE = new float[LOD_COUNT] { 0.7f, 0.5f, 0.2f, 0.1f, 0.01f };
+        private const int LOD_INVALID = -1;
+        private const float LOD_COVERAGE_INVALID = -1.0f;
 
-        private const string primitiveLogScope = "ovrAvatarPrimitive";
+        private static LodValues _lodValues = default;
+        private static void CheckLodDataInitialized()
+        {
+            unsafe
+            {
+                if (!_lodValues.IsValid)
+                {
+                    _lodValues = new LodValues(0.7f, 0.5f, 0.2f, 0.1f, 0.01f);
+                }
+            }
+        }
 
         /// Name of the asset this mesh belongs to.
         /// The asset name is established when the asset is loaded.
@@ -119,6 +128,14 @@ namespace Oculus.Avatar2
         /// These are established when the primitive is loaded.
         ///
         public CAPI.ovrAvatar2EntityViewFlags viewFlags { get; private set; }
+
+        ///
+        /// If the user wants only a subset of the mesh, as specified by
+        /// indices, these flags will control which submeshes are included.
+        /// NOTE: In the current implementation all verts are downloaded,
+        /// but the indices referencing them are excluded.
+        ///
+        public CAPI.ovrAvatar2EntitySubMeshInclusionFlags subMeshInclusionFlags { get; private set; }
 
         /// True if this primitive has joints (is skinned).
         public bool HasJoints => JointCount > 0;
@@ -613,6 +630,7 @@ namespace Oculus.Avatar2
             GetLodInfo();
             GetManifestationInfo();
             GetViewInfo();
+            GetSubMeshInclusionInfo();
 
             // load triangles
             // load mesh & morph targets
@@ -770,6 +788,13 @@ namespace Oculus.Avatar2
                 if (OvrTime.ShouldHold) { yield return OvrTime.SliceStep.Hold; }
                 mesh.SetUVs(0, _meshInfo.texCoords);
                 _meshInfo.texCoords.Reset();
+
+                if (OvrTime.ShouldHold) { yield return OvrTime.SliceStep.Hold; }
+                StripExcludedSubMeshes(ref _meshInfo.triangles);
+
+                // get number of submeshes
+                // foreach submesh, check to see if it is included
+                // if it is not, then romove this range from the index buffer
 
                 if (OvrTime.ShouldHold) { yield return OvrTime.SliceStep.Hold; }
                 mesh.SetIndices(_meshInfo.triangles, MeshTopology.Triangles, 0, !hasBounds, 0);
@@ -1120,6 +1145,45 @@ namespace Oculus.Avatar2
 
         #endregion
 
+        private void StripExcludedSubMeshes(ref NativeArray<ushort> triangles)
+        {
+            var ct = _cancellationTokenSource.Token;
+            ct.ThrowIfCancellationRequested();
+
+            if (subMeshInclusionFlags != CAPI.ovrAvatar2EntitySubMeshInclusionFlags.All)
+            {
+                uint subMeshCount = 0;
+                var countResult = CAPI.ovrAvatar2Primitive_GetSubMeshCount(assetId, out subMeshCount);
+                ct.ThrowIfCancellationRequested();
+                if (countResult.IsSuccess())
+                {
+                    unsafe
+                    {
+                        for (uint subMeshIndex = 0; subMeshIndex < subMeshCount; subMeshIndex++)
+                        {
+                            CAPI.ovrAvatar2PrimitiveSubmesh subMesh;
+                            var subMeshResult = CAPI.ovrAvatar2Primitive_GetSubMeshByIndex(assetId, subMeshIndex, out subMesh);
+                            ct.ThrowIfCancellationRequested();
+                            if (subMeshResult.IsSuccess())
+                            {
+                                CAPI.ovrAvatar2EntitySubMeshInclusionFlags inclusionType = subMesh.inclusionFlags;
+                                if((inclusionType & subMeshInclusionFlags) == 0)
+                                {
+                                    uint triangleIndex = subMesh.indexStart;
+                                    for (uint triangleCount = 0; triangleCount < subMesh.indexCount; triangleCount++)
+                                    {
+                                        // current strategy is to degenerate the triangle...
+                                        int triangleBase = (int)(triangleIndex + triangleCount);
+                                        triangles[triangleBase] = 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private void GetLodInfo()
         {
             lod = LOD_INVALID;
@@ -1128,6 +1192,8 @@ namespace Oculus.Avatar2
             var result = CAPI.ovrAvatar2Asset_GetLodFlags(assetId, out var lodFlag);
             if (result.IsSuccess())
             {
+                CheckLodDataInitialized();
+
                 lodFlags = lodFlag;
 
                 // TODO: Handle lods as flags, not a single int. Until then, take the highest quality lod available (lowest bit)
@@ -1140,7 +1206,7 @@ namespace Oculus.Avatar2
                     if ((flagValue & maskValue) != 0)
                     {
                         lod = i;
-                        coverage = LOD_COVERAGE[lod];
+                        coverage = _lodValues.GetCoverageForIndex(lod);
                         break;
                     }
 
@@ -1173,6 +1239,19 @@ namespace Oculus.Avatar2
             {
                 OvrAvatarLog.LogWarning($"GetManifestationFlags Failed: {result}", primitiveLogScope);
             }
+        }
+
+        private void GetSubMeshInclusionInfo()
+        {
+            // sub mesh inclusion flags used at this stage will work as load filters,
+            // it's more normal for users to use ActiveSubMesh flags in OvrAvatarEntity
+            // so for now this implementation is incomplete and instead we just leave it at "all"
+
+            subMeshInclusionFlags = CAPI.ovrAvatar2EntitySubMeshInclusionFlags.All;
+            // use to test load filtering.. // subMeshInclusionFlags = CAPI.ovrAvatar2EntitySubMeshInclusionFlags.BothEyes;
+
+            // This is what I really want to use, the flags set on the Entity...
+            // ovrAvatar2Entity_GetSubMeshInclusionFlags(ovrAvatar2EntityId entityId, out ovrAvatar2EntitySubMeshInclusionFlags subMeshInclusionFlags);
         }
 
         /////////////////////////////////////////////////
@@ -2289,6 +2368,27 @@ namespace Oculus.Avatar2
             }
         }
 
+        private struct LodValues
+        {
+            private const int LOD_COUNT = 5;
+
+#pragma warning disable 649
+            private unsafe fixed float Coverage[LOD_COUNT];
+#pragma warning restore 649
+
+            public float GetCoverageForIndex(int lodIndex)
+            {
+                unsafe { return Coverage[lodIndex]; }
+            }
+
+            public unsafe bool IsValid => Coverage[0] > 0.0f;
+            public unsafe LodValues(float cover0, float cover1, float cover2, float cover3, float cover4)
+            {
+                Coverage[0] = cover0; Coverage[1] = cover1; Coverage[2] = cover2;
+                Coverage[3] = cover3; Coverage[4] = cover4;
+            }
+        }
+
         private const Allocator _nativeAllocator = Allocator.Persistent;
         private const NativeArrayOptions _nativeArrayInit = NativeArrayOptions.UninitializedMemory;
 
@@ -2297,12 +2397,14 @@ namespace Oculus.Avatar2
         private const int sizeOfOvrVector3f = sizeOfFloat * 3;
         private const int sizeOfOvrVector4f = sizeOfFloat * 4;
 
+#if UNITY_EDITOR
         static OvrAvatarPrimitive()
         {
             // Cache data type sizes so we don't repeat them throughout this process
-            Debug.Assert(sizeOfOvrVector2f == Marshal.SizeOf<CAPI.ovrAvatar2Vector2f>());
-            Debug.Assert(sizeOfOvrVector3f == Marshal.SizeOf<CAPI.ovrAvatar2Vector3f>());
-            Debug.Assert(sizeOfOvrVector4f == Marshal.SizeOf<CAPI.ovrAvatar2Vector4f>());
+            Debug.Assert(sizeOfOvrVector2f == UnsafeUtility.SizeOf<CAPI.ovrAvatar2Vector2f>());
+            Debug.Assert(sizeOfOvrVector3f == UnsafeUtility.SizeOf<CAPI.ovrAvatar2Vector3f>());
+            Debug.Assert(sizeOfOvrVector4f == UnsafeUtility.SizeOf<CAPI.ovrAvatar2Vector4f>());
         }
+#endif // UNITY_EDITOR
     }
 }

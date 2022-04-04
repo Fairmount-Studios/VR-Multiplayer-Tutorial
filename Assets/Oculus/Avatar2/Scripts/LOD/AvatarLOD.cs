@@ -56,6 +56,14 @@ namespace Oculus.Avatar2
         private int prevLevel_;
         private bool forceDisabled_;
 
+        // AvatarLODManager.Initialize doesn't run for all the avatars added
+        // in LODScene so assign a unique id internally on construction.
+        private static Int32 _avatarIdSource = 1;
+        public AvatarLOD()
+        {
+            _avatarId = _avatarIdSource++;
+        }
+
         public int Level
         {
             get { return level_; }
@@ -313,6 +321,8 @@ namespace Oculus.Avatar2
 
             _minLodLevel = -1;
             _maxLodLevel = -1;
+
+            CAPI.ovrAvatar2LOD_UnregisterAvatar(_avatarId);
         }
 
         public void AddLODGameObjectGroupByAvatarSkinnedMeshRenderers(GameObject parentGameObject, Dictionary<string, List<GameObject>> suffixToObj)
@@ -376,9 +386,19 @@ namespace Oculus.Avatar2
                     }
                 }
             }
+
             AvatarLODGameObjectGroup gameObjectGroup = commonParent.GetOrAddComponent<AvatarLODGameObjectGroup>();
             gameObjectGroup.GameObjects = children;
             AddLODGroup(gameObjectGroup);
+
+            // Register avatar with native runtime LOD scheme
+            // Temporary for LOD editing bringup
+            CAPI.ovrAvatar2LODRegistration reg;
+            reg.avatarId = _avatarId;
+            reg.lodWeights = vertexCounts.ToArray();
+            reg.lodThreshold = _maxLodLevel;
+
+            CAPI.ovrAvatar2LOD_RegisterAvatar(reg);
         }
 
         public AvatarLODBehaviourStateGroup AddLODBehaviourStateGroup(
@@ -486,5 +506,9 @@ namespace Oculus.Avatar2
             centerXform = transform;
             extraXforms.Clear();
         }
+
+        // Temporary to bring up runtime LOD system
+        // Unique ID for this avatar
+        public Int32 _avatarId;
     }
 }

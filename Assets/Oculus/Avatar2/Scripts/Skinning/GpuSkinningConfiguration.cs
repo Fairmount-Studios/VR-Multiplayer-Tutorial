@@ -69,7 +69,7 @@ namespace Oculus.Avatar2
 
         /// Fallback skinning type (when skinning implementation is not specified).
         // Used if Entity does not specify and DefaultSkinningType == SkinningConfig.DEFAULT
-        private const SkinningConfig FallbackSkinningType = SkinningConfig.UNITY;
+        private SkinningConfig FallbackSkinningType = SkinningConfig.OVR_UNITY_GPU_FULL;
 
         /// Skinning quality (bones per vertex) used for each level of detail.
         [SerializeField]
@@ -151,7 +151,7 @@ namespace Oculus.Avatar2
             if (config == SkinningConfig.DEFAULT)
             {
                 var defaultConfig = Instance.DefaultSkinningType;
-                config = defaultConfig != SkinningConfig.DEFAULT ? defaultConfig : FallbackSkinningType;
+                config = defaultConfig != SkinningConfig.DEFAULT ? defaultConfig : Instance.FallbackSkinningType;
             }
         }
 
@@ -165,6 +165,14 @@ namespace Oculus.Avatar2
             return configValue;
         }
 
+        internal void ValidateFallbackSkinner(bool unitySkinnerSupported, bool gpuSkinnerSupported)
+        {
+            if (!gpuSkinnerSupported && FallbackSkinningType == SkinningConfig.OVR_UNITY_GPU_FULL)
+            {
+                FallbackSkinningType = unitySkinnerSupported ? SkinningConfig.UNITY : SkinningConfig.NONE;
+            }
+        }
+
 #if UNITY_EDITOR
         protected void OnValidate()
         {
@@ -173,6 +181,9 @@ namespace Oculus.Avatar2
             EnforceValidFormat(ref SkinnerOutputFormat);
 
             ValidateQualityPerLOD();
+
+            CheckDefaultShader(ref _CombineMorphTargetsShader, "Avatar/CombineMorphTargets");
+            CheckDefaultShader(ref _SkinToTextureShader, "Avatar/SkinToTexture");
         }
 
         private void EnforceValidFormat(ref TexturePrecision precision)
@@ -217,6 +228,14 @@ namespace Oculus.Avatar2
                 {
                     QualityPerLOD[newIdx] = fillValue;
                 }
+            }
+        }
+
+        private void CheckDefaultShader(ref Shader shaderProperty, string defaultShaderName)
+        {
+            if (shaderProperty == null)
+            {
+                shaderProperty = Shader.Find(defaultShaderName);
             }
         }
 #endif

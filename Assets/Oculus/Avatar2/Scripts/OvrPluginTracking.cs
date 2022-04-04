@@ -18,12 +18,12 @@ namespace Oculus.Avatar2
         [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         private static extern bool ovrpTracking_CreateHandTrackingContext(
-            ref CAPI.ovrAvatar2HandTrackingDataContext outContext);
+            out CAPI.ovrAvatar2HandTrackingDataContext outContext);
 
         [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl, EntryPoint = "ovrpTracking_CreateHandTrackingContext")]
         [return: MarshalAs(UnmanagedType.U1)]
         private static extern bool ovrpTracking_CreateHandTrackingContextNative(
-            ref CAPI.ovrAvatar2HandTrackingDataContextNative outContext);
+            out CAPI.ovrAvatar2HandTrackingDataContextNative outContext);
 
 
         public static bool Initialize(CAPI.LoggingDelegate cb, IntPtr logContext)
@@ -54,8 +54,7 @@ namespace Oculus.Avatar2
 
         private static CAPI.ovrAvatar2HandTrackingDataContext? CreateHandTrackingContext()
         {
-            var context = new CAPI.ovrAvatar2HandTrackingDataContext();
-            if (ovrpTracking_CreateHandTrackingContext(ref context))
+            if (ovrpTracking_CreateHandTrackingContext(out var context))
             {
                 return context;
             }
@@ -65,8 +64,7 @@ namespace Oculus.Avatar2
 
         private static CAPI.ovrAvatar2HandTrackingDataContextNative? CreateHandTrackingContextNative()
         {
-            var context = new CAPI.ovrAvatar2HandTrackingDataContextNative();
-            if (ovrpTracking_CreateHandTrackingContextNative(ref context))
+            if (ovrpTracking_CreateHandTrackingContextNative(out var context))
             {
                 return context;
             }

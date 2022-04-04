@@ -157,22 +157,22 @@ namespace Oculus.Avatar2
         #region Subclass extensions
 
         /// Called when native avatar is created, after entering state AvatarState.Created
-        protected virtual void OnCreated(){}
+        protected virtual void OnCreated() { }
 
         /// Called when skeleton is loaded, after entering state AvatarState.Skeleton
-        protected virtual void OnSkeletonLoaded(){}
+        protected virtual void OnSkeletonLoaded() { }
 
         /// Called when Default Avatar is loaded, after entering state AvatarState.DefaultAvatar
-        protected virtual void OnDefaultAvatarLoaded(){}
+        protected virtual void OnDefaultAvatarLoaded() { }
 
         /// Called the first time a User Avatar is loaded, after entering state AvatarState.UserAvatar
-        protected virtual void OnUserAvatarLoaded(){}
+        protected virtual void OnUserAvatarLoaded() { }
 
         /// Called at the start of Teardown() before reverting to state AvatarState.None
-        protected virtual void PreTeardown(){}
+        protected virtual void PreTeardown() { }
 
         /// Called when a load operation fails. See LoadRequestInfo for reason
-        protected virtual void OnLoadFailed(CAPI.ovrAvatar2LoadRequestInfo loadRequest) {}
+        protected virtual void OnLoadFailed(CAPI.ovrAvatar2LoadRequestInfo loadRequest) { }
 
         ///
         /// Called on any LoadRequest state change for this entity. Overriding this is not recommended because the
@@ -523,7 +523,9 @@ namespace Oculus.Avatar2
             unsafe
             {
                 CAPI.ovrAvatar2Transform* jointTransform = entityPose.localTransforms + txIdx;
-
+#if OVR_AVATAR_ENABLE_CIENT_XFORM
+                joint.transform.ApplyOvrTransform(jointTransform);
+#else
                 // HACK: Mirror rendering transforms across X to fixup coordinate system errors
                 if (joint.parentIndex == -1)
                 {
@@ -535,6 +537,7 @@ namespace Oculus.Avatar2
                 {
                     joint.transform.ApplyOvrTransform(jointTransform);
                 }
+#endif
             }
         }
 
@@ -783,7 +786,7 @@ namespace Oculus.Avatar2
             do
             {
                 OvrTime.SliceStep step = LoadSync_CheckPrimitivesLoaded_Internal(out var result);
-                if(step != OvrTime.SliceStep.Continue)
+                if (step != OvrTime.SliceStep.Continue)
                 {
                     // Unrecoverable loading error - abort
                     if (step == OvrTime.SliceStep.Cancel) { yield break; }
@@ -1371,9 +1374,9 @@ Needed for bounding box calculation. Consider enabling in the prefab `_creationI
 #pragma warning restore 618
         }
 
-        #endregion
+#endregion
 
-        #region User Callback Invocation
+#region User Callback Invocation
 
         private void InvokeOnCreated()
         {
@@ -1494,6 +1497,6 @@ Needed for bounding box calculation. Consider enabling in the prefab `_creationI
             }
         }
 
-        #endregion
+#endregion
     }
 }

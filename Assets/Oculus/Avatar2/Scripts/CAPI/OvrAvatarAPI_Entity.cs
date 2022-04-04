@@ -94,6 +94,8 @@ namespace Oculus.Avatar2
             public ovrAvatar2EntityManifestationFlags manifestationFlags; // unsigned ovrAvatar2EntityManifestationFlags
             [EnumMask]
             public ovrAvatar2EntityViewFlags viewFlags; // unsigned ovrAvatar2EntityViewFlags
+            [EnumMask]
+            public ovrAvatar2EntitySubMeshInclusionFlags subMeshInclusionFlags; // unsigned ovrAvatar2EntityViewFlags
         }
 
 
@@ -205,6 +207,20 @@ namespace Oculus.Avatar2
 
         //-----------------------------------------------------------------
         //
+        // SubMeshInclusions
+        //
+        //
+
+        [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ovrAvatar2Result ovrAvatar2Entity_GetSubMeshInclusionFlags(
+            ovrAvatar2EntityId entityId, out ovrAvatar2EntitySubMeshInclusionFlags subMeshInclusionFlags);
+
+        [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ovrAvatar2Result ovrAvatar2Entity_SetSubMeshInclusionFlags(
+            ovrAvatar2EntityId entityId, ovrAvatar2EntitySubMeshInclusionFlags subMeshInclusionFlags);
+
+        //-----------------------------------------------------------------
+        //
         // Pose
         //
         //
@@ -288,6 +304,7 @@ namespace Oculus.Avatar2
                 lodFlags = ovrAvatar2EntityLODFlags.All,
                 manifestationFlags = ovrAvatar2EntityManifestationFlags.All,
                 viewFlags = ovrAvatar2EntityViewFlags.All,
+                subMeshInclusionFlags = ovrAvatar2EntitySubMeshInclusionFlags.All
             };
         }
 

@@ -3,9 +3,8 @@
 
 #include "UnityCG.cginc"
 
-#if defined(OVR_VERTEX_FETCH_TEXTURE) || defined(OVR_VERTEX_FETCH_TEXTURE_UNORM)
-  #define OVR_VERTEX_HAS_VERTEX_ID
-#endif
+// Keep this around for backwards compatibility
+#define OVR_VERTEX_HAS_VERTEX_ID
 
 // ------------------------------------------------------------------------------
 // Define some macros for getting/setting a vertex field.
@@ -66,30 +65,15 @@
 // NOTE: Due to the way surface shader work in Unity, some surface shaders may require
 // having both the normal and tangent defined in the vertex input structure due to some
 // surface shader inner workings. Due to that fact, the normal and tangent will be listed
-// as "required" even if the information will be stored in a texture instead. The hope/idea
+// as "required" even if the information will be stored in a buffer instead. The hope/idea
 // is that the shader compiler will optimize out the unused fields for vertex and fragment
 // shaders and just fill in with some default values for surface shaders
 
-#if defined(OVR_VERTEX_FETCH_TEXTURE) || defined(OVR_VERTEX_FETCH_TEXTURE_UNORM)
-  // Define the required vertex fields when
-  // fetching vertex information from texture
-
-  #define OVR_REQUIRED_VERTEX_FIELDS \
-    OVR_VERTEX_POSITION_FIELD \
-    OVR_VERTEX_NORMAL_FIELD \
-    OVR_VERTEX_TANGENT_FIELD \
-    OVR_VERTEX_VERT_ID_FIELD
-
-#else // defined(OVR_VERTEX_FETCH_TEXTURE) || defined(OVR_VERTEX_FETCH_TEXTURE_UNORM)
-
-  // Define the required vertex fields when
-  // not fetching vertex info from texture
-  #define OVR_REQUIRED_VERTEX_FIELDS \
-    OVR_VERTEX_POSITION_FIELD \
-    OVR_VERTEX_NORMAL_FIELD \
-    OVR_VERTEX_TANGENT_FIELD
-
-#endif // defined(OVR_VERTEX_FETCH_TEXTURE) || defined(OVR_VERTEX_FETCH_TEXTURE_UNORM)
+#define OVR_REQUIRED_VERTEX_FIELDS \
+  OVR_VERTEX_POSITION_FIELD \
+  OVR_VERTEX_NORMAL_FIELD \
+  OVR_VERTEX_TANGENT_FIELD \
+  OVR_VERTEX_VERT_ID_FIELD
 
 
 // Define next "set" of texture coordinate semantics which are available.
@@ -152,14 +136,9 @@ struct OvrDefaultAppdata {
 struct OvrVertexData {
   float4 position;
   float3 normal;
+  float4 tangent;
 
-  #if defined(OVR_VERTEX_HAS_TANGENTS)
-    float4 tangent;
-  #endif
-
-  #if defined(OVR_VERTEX_HAS_VERTEX_ID)
-    uint vertexId;
-  #endif
+  uint vertexId;
 };
 
 #endif // AVATAR_CUSTOM_TYPES_INCLUDED

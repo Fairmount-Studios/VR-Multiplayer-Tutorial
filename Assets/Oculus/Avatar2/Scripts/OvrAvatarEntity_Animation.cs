@@ -55,7 +55,7 @@ namespace Oculus.Avatar2
             public abstract void UpdateAnimationTime(float deltaTime);
         }
 
-        private class EntityAnimatorMotionSmoothing : EntityAnimatorBase, IInterpolationValueProvider
+        private sealed class EntityAnimatorMotionSmoothing : EntityAnimatorBase, IInterpolationValueProvider
         {
             // Currently using as a double buffering setup with only two frames, FrameA and FrameB
             // No pending frames are stored, as new frames come in before previous render frames are finished,
@@ -106,7 +106,8 @@ namespace Oculus.Avatar2
 
             public EntityAnimatorMotionSmoothing(OvrAvatarEntity entity) : base(entity)
             {
-                for (int i = 0; i < _renderFrameInfo.Length; i++) {
+                for (int i = 0; i < _renderFrameInfo.Length; i++)
+                {
                     _renderFrameInfo[i] = new RenderFrameInfo();
                 }
             }
@@ -224,7 +225,7 @@ namespace Oculus.Avatar2
                 var listTwoCount = listTwo.Count;
                 if (listOneCount > listTwoCount) { return false; }
 
-                for(var idx1 = 0; idx1 < listOneCount; ++idx1 )
+                for (var idx1 = 0; idx1 < listOneCount; ++idx1)
                 {
                     if (!listTwo.Contains(listOne[idx1], listTwoCount)) { return false; }
                 }
@@ -234,7 +235,7 @@ namespace Oculus.Avatar2
             private void AdvanceRenderingTimeIfPossible(float delta)
             {
                 // Can only advance if there are 2 or more valid render frames
-                if (!_hasTwoValidRenderFrames) return;
+                if (!_hasTwoValidRenderFrames) { return; }
 
                 float t0 = _renderFrameInfo[EarliestRenderFrameIndex].Timestamp;
                 float t1 = _renderFrameInfo[LatestRenderFrameIndex].Timestamp;
@@ -246,7 +247,7 @@ namespace Oculus.Avatar2
             }
         }
 
-        private class EntityAnimatorDefault : EntityAnimatorBase
+        private sealed class EntityAnimatorDefault : EntityAnimatorBase
         {
             public EntityAnimatorDefault(OvrAvatarEntity entity) : base(entity)
             {
@@ -265,10 +266,12 @@ namespace Oculus.Avatar2
         private void SampleSkinningOrigin(in CAPI.ovrAvatar2PrimitiveRenderState primState, out CAPI.ovrAvatar2Transform skinningOrigin)
         {
             skinningOrigin = primState.skinningOrigin;
+#if !OVR_AVATAR_ENABLE_CLIENT_XFORM
+
             // HACK: Mirror rendering transforms to fixup coordinate system errors
             skinningOrigin.scale.z *= -1f;
-
             skinningOrigin = skinningOrigin.ConvertSpace();
+#endif
         }
 
         protected void SamplePose(in CAPI.ovrAvatar2Pose entityPose, in CAPI.ovrAvatar2EntityRenderState renderState)
@@ -351,7 +354,9 @@ namespace Oculus.Avatar2
                 if ((*jointTransform).IsNan()) return;
 
                 var jointParentIndex = entityPose.GetParentIndex(skeletonIdx);
-
+#if OVR_AVATAR_ENABLE_CLIENT_XFORM
+                jointUnityTx.ApplyOvrTransform(jointTransform);
+#else
                 if (jointParentIndex != -1)
                 {
                     jointUnityTx.ApplyOvrTransform(jointTransform);
@@ -364,6 +369,7 @@ namespace Oculus.Avatar2
                     flipScaleZ.scale.z = -flipScaleZ.scale.z;
                     jointUnityTx.ApplyOvrTransform(in flipScaleZ);
                 }
+#endif
             }
         }
 
@@ -408,6 +414,6 @@ namespace Oculus.Avatar2
             }
         }
 
-        #endregion
+#endregion
     }
 }

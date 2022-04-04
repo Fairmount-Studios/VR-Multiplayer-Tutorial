@@ -16,7 +16,8 @@ namespace Oculus.Avatar2
         private bool UseGpuSkinning => SkinningType == SkinningConfig.OVR_UNITY_GPU_FULL;
         private bool UseGpuMorphTargets => SkinningType == SkinningConfig.OVR_UNITY_GPU_FULL;
 
-        private bool UseMotionSmoothingRenderer => GpuSkinningConfiguration.Instance.MotionSmoothing;
+        private bool UseMotionSmoothingRenderer => MotionSmoothingSettings == MotionSmoothingOptions.USE_CONFIG_SETTING ? GpuSkinningConfiguration.Instance.MotionSmoothing : MotionSmoothingSettings == MotionSmoothingOptions.FORCE_ON;
+
         private Transform _probeAnchor = null;
 
         /////////////////////////////////////////////////
@@ -47,6 +48,16 @@ namespace Oculus.Avatar2
         [SerializeField]
         private SkinningConfig SkinningType = SkinningConfig.DEFAULT;
 
+        private enum MotionSmoothingOptions
+        {
+            USE_CONFIG_SETTING,
+            FORCE_ON,
+            FORCE_OFF,
+        }
+
+        [Tooltip("Enable/disable motion smoothing for an individual OvrAvatarEntity. By default uses the setting specified in the GpuSkinningConfiguration.")]
+        [SerializeField] private MotionSmoothingOptions MotionSmoothingSettings = MotionSmoothingOptions.USE_CONFIG_SETTING;
+
         [SerializeField] private bool _hidden = false;
 
         // TODO: This should be keyed by primitiveId instead of instance?
@@ -74,7 +85,10 @@ namespace Oculus.Avatar2
 
             var renderable = AddRenderableComponent(primitiveObject);
 
-            renderable.rendererComponent.probeAnchor = _probeAnchor;
+            if (!(_probeAnchor is null))
+            {
+                renderable.rendererComponent.probeAnchor = _probeAnchor;
+            }
 
             renderable.ApplyMeshPrimitive(primitive);
 

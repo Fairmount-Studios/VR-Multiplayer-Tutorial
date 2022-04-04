@@ -4,6 +4,8 @@ using Unity.Collections;
 
 using UnityEngine;
 
+using Oculus.Avatar2;
+
 namespace Oculus.Skinning.GpuSkinning
 {
     internal interface IOvrGpuJointSkinnerDrawCall
@@ -27,6 +29,8 @@ namespace Oculus.Skinning.GpuSkinning
             OvrExpandableTextureArray neutralPoseTexture,
             int blockDataStrideBytes)
         {
+            OvrAvatarLog.Assert(skinningShader != null);
+
             _skinningMaterial = new Material(skinningShader);
             _neutralPoseTex = neutralPoseTexture;
 

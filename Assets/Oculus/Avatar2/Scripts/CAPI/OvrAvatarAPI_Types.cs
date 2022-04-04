@@ -163,6 +163,58 @@ namespace Oculus.Avatar2
             All = FirstPerson | ThirdPerson
         }
 
+        /**
+         * Configures what sub-meshes of the avatar
+         * will show.
+         *
+         * @see ovrAvatar2EntityMaterialTypes_
+         */
+        [Flags]
+        [System.Serializable]
+        public enum ovrAvatar2EntitySubMeshInclusionFlags : Int32
+        {
+            None = 0,
+
+            /// Outfit only
+            Outfit = 1 << 0,
+
+            /// Body only
+            Body = 1 << 1,
+
+            /// Head only
+            Head = 1 << 2,
+
+            /// Hair only
+            Hair = 1 << 3,
+
+            /// Eyebrow only
+            Eyebrow = 1 << 4,
+
+            /// L Eye only
+            L_Eye = 1 << 5,
+
+            /// R Eye only
+            R_Eye = 1 << 6,
+
+            /// Lashes only
+            Lashes = 1 << 7,
+
+            /// Facial hair only
+            FacialHair = 1 << 8,
+
+            /// Headwear only
+            Headwear = 1 << 9,
+
+            /// Earrings only
+            Earrings = 1 << 10,
+
+            ///  All manifestations requested.
+            All = Outfit | Body | Head | Hair | Eyebrow | L_Eye | R_Eye | Lashes | FacialHair | Headwear | Earrings,
+
+            ///  Works both as a test and also might be useful in some real applications.
+            BothEyes = L_Eye | R_Eye,
+        }
+
         //-----------------------------------------------------------------
         //
         // Math
@@ -600,6 +652,8 @@ namespace Oculus.Avatar2
             UnmatchedLoadFilters = 21,
             DeserializationPending = 22,
             LegacyJointTypeFallback = 23,
+            UnableToConnectToDevTools = 24,
+            RequestCancelled = 25,
 
             Count,
         }
@@ -680,5 +734,6 @@ namespace Oculus.Avatar2
 
             Count
         }
+
     }
 }

@@ -144,9 +144,6 @@
             #pragma vertex vert
             #pragma fragment frag
 
-            // the following 3 are essential for adding GPU skinning, along with modification of the vertex shader below
-            #pragma multi_compile ___ OVR_VERTEX_FETCH_TEXTURE OVR_VERTEX_FETCH_TEXTURE_UNORM
-            #pragma multi_compile __ OVR_VERTEX_HAS_TANGENTS
             #pragma target 3.5 // necessary for use of SV_VertexID
             #include "../AvatarCustom.cginc"
 
@@ -164,7 +161,7 @@
             // #pragma multi_compile __ _RENDER_DEBUG_DIFFUSE _RENDER_DEBUG_SPECULAR _RENDER_DEBUG_INDIRECT_DIFFUSE _RENDER_DEBUG_INDIRECT_SPECULAR _RENDER_DEBUG_BACKLIGHT _RENDER_DEBUG_TRANSLUCENCY _RENDER_DEBUG_VERTEX_COLOR _RENDER_DEBUG_UVS _RENDER_DEBUG_WORLD_NORMAL _RENDER_DEBUG_WORLD_POSITION _RENDER_DEBUG_SH
 
             #pragma shader_feature _LIGHTING_SYSTEM_UNITY _LIGHTING_SYSTEM_VERTEX_GI
-            #pragma shader_feature _SHADER_TYPE_SOLID_COLOR _SHADER_TYPE_TEXTURED _SHADER_TYPE_SKIN _SHADER_TYPE_HAIR _SHADER_TYPE_LEFT_EYE _SHADER_TYPE_RIGHT_EYE _SHADER_TYPE_SUBMESH 
+            #pragma shader_feature _SHADER_TYPE_SOLID_COLOR _SHADER_TYPE_TEXTURED _SHADER_TYPE_SKIN _SHADER_TYPE_HAIR _SHADER_TYPE_LEFT_EYE _SHADER_TYPE_RIGHT_EYE _SHADER_TYPE_SUBMESH
 
             #include "AvatarCommon/AvatarShaderFramework.cginc"
 
@@ -455,9 +452,6 @@
             #pragma vertex vert
             #pragma fragment frag
 
-            // the following 3 are essential for adding GPU skinning, along with modification of the vertex shader below
-            #pragma multi_compile ___ OVR_VERTEX_FETCH_TEXTURE OVR_VERTEX_FETCH_TEXTURE_UNORM
-            #pragma multi_compile __ OVR_VERTEX_HAS_TANGENTS
             #pragma target 3.5 // necessary for use of SV_VertexID
             #include "../AvatarCustom.cginc"
 

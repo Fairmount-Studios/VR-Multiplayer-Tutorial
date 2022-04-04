@@ -21,17 +21,17 @@ namespace Oculus.Avatar2
             NONE = 0,
             /// Mesh data is loaded into standard `Unity.Mesh` fields
             UNITY = 1 << 0,
-            /// Animation mesh data is stored in AvatarSDK internal buffers, it is not availabe to Unity systems
+            /// Animation mesh data is stored in AvatarSDK internal buffers, it is not available to Unity systems
             OVR_CPU = 1 << 1,
-            /// Mesh data is primarily stored in textures and compute buffers, it is not availabe to Unity systems
+            /// Mesh data is primarily stored in textures and compute buffers, it is not available to Unity systems
             OVR_GPU = 1 << 2,
             /// DEBUG ONLY - All modes are supported, wastes lots of memory
             ALL = ~0
         }
 
         [Header("Skinning Settings")]
-        [Tooltip("Skinning implementations which assets will be loaded for, use the smallest set possible")]
-        [SerializeField] [EnumMask] private SkinnerSupport _skinnersSupported = SkinnerSupport.ALL;
+        [Tooltip("Skinning implementations which assets will be loaded for, use the smallest set possible.\nThere are significant memory and load time costs to enabling more than one.")]
+        [SerializeField] [EnumMask] private SkinnerSupport _skinnersSupported = SkinnerSupport.OVR_GPU;
 
         [Header("Unity Skinning")]
         [SerializeField] private SkinQuality[] _skinQualityPerLOD = Array.Empty<SkinQuality>();
@@ -46,6 +46,9 @@ namespace Oculus.Avatar2
 
         public bool OvrGPUSkinnerSupported =>
             shaderLevelSupported && (_skinnersSupported & SkinnerSupport.OVR_GPU) == SkinnerSupport.OVR_GPU;
+
+        public bool UnitySkinnerSupported =>
+            (_skinnersSupported & SkinnerSupport.UNITY) == SkinnerSupport.UNITY;
 
         // Set via `Initialize`
         private int _shaderLevelSupport = -1;
@@ -80,6 +83,19 @@ namespace Oculus.Avatar2
                         return SkinQuality.Bone4;
                 }
                 return SkinQuality.Auto;
+            }
+        }
+
+        private void ValidateSupportedSkinners()
+        {
+            if (!shaderLevelSupported && (_skinnersSupported & SkinnerSupport.OVR_GPU) == SkinnerSupport.OVR_GPU)
+            {
+                // gpu skinning not actually supported so remove from supported list.
+                _skinnersSupported &= ~SkinnerSupport.OVR_GPU;
+                if (_skinnersSupported == SkinnerSupport.NONE)
+                {
+                    _skinnersSupported = SkinnerSupport.UNITY;
+                }
             }
         }
     }

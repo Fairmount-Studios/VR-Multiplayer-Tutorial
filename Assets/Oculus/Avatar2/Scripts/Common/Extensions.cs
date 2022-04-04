@@ -39,4 +39,14 @@ namespace Oculus.Avatar2
             list.Insert(index < 0 ? ~index : index, item);
         }
     }
+
+    public static class FloatExtenstions
+    {
+        private const float DEFAULT_EPS = 1e-30f;
+
+        public static bool IsApproximatelyZero(this float x, float eps = DEFAULT_EPS)
+        {
+            return Mathf.Abs(x) <= eps;
+        }
+    }
 }

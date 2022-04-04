@@ -27,27 +27,11 @@ public abstract class OvrAvatarSkinnedRenderable : OvrAvatarRenderable
      * @see ApplyMeshPrimitive
      * @see OvrAvatarUnitySkinnedRenderable
      */
-    private const string logScope = "SkinnedRenderable";
-
-    // TODO: Move to CpuSkinnedRenderable class - or a UnitySkinnedRenderable
-    public override void ApplyMeshPrimitive(OvrAvatarPrimitive primitive)
+    protected internal override void ApplyMeshPrimitive(OvrAvatarPrimitive primitive)
     {
         CheckDefaultRenderer();
 
         base.ApplyMeshPrimitive(primitive);
-
-        // TODO: May not need to copy for all SkinnedRenderables - or can share copies between some.
-        // For now we need to ensure mats aren't getting shared accross invalid contexts
-        CopyMaterial();
-
-        // Initialize for the SkinnedMeshRenderer, not used for GPU Skinning
-        var skinnedMeshRenderer = rendererComponent as SkinnedMeshRenderer;
-        if (skinnedMeshRenderer != null)
-        {
-            // Initialize duplicate mesh structure to operate multiple avatars with different poses
-            skinnedMeshRenderer.sharedMesh = _mesh;
-            skinnedMeshRenderer.localBounds = primitive.hasBounds ? primitive.mesh.bounds : FixedBounds;
-        }
     }
 
     ///
@@ -67,19 +51,12 @@ public abstract class OvrAvatarSkinnedRenderable : OvrAvatarRenderable
         transform.ApplyOvrTransform(skinningOrigin);
     }
 
-    public abstract bool UpdateJointMatrices(CAPI.ovrAvatar2EntityId entityId, OvrAvatarPrimitive primitive, CAPI.ovrAvatar2PrimitiveRenderInstanceID primitiveInstanceId);
+    public abstract bool UpdateJointMatrices(CAPI.ovrAvatar2EntityId entityId, OvrAvatarPrimitive primitive,
+        CAPI.ovrAvatar2PrimitiveRenderInstanceID primitiveInstanceId);
 
     // TODO: Reference count
     public interface IDisposableBuffer : IDisposable
     {
         IntPtr BufferPtr { get; }
     }
-
-    #region Bounds support
-    /// Bounding box for the skinned avatar, should encompass arms reaching in all dimensions.
-    [Tooltip("This must be found empirically and encompass the arms reach in all 3 dimensions.")]
-    [SerializeField] private Bounds FixedBounds = new Bounds(new Vector3(0f, 0.5f, 0.0f), new Vector3(2.0f, 2.0f, 2.0f));
-
-    #endregion
-
 }

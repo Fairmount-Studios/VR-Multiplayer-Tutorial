@@ -102,7 +102,6 @@ namespace Oculus.Avatar2
             ///< detected memory leak
             CheckMemoryLeaks = 1 << 0,
             UseDefaultImage = 1 << 1,
-            SuppressTelemetry = 1 << 2,
             // When set, skinningOrigin in ovrAvatar2PrimitiveRenderState is set with the skinning origin
             // and the skinning matrices root will be the skinning Origin
             EnableSkinningOrigin = 1 << 3,
@@ -145,6 +144,23 @@ namespace Oculus.Avatar2
             public Int64 maxNetworkReceiveBytesPerSecond;
 
             public ovrAvatar2Vector3f defaultModelColor;
+            ///
+            /// Defines the right axis in the game engine coordinate system.
+            /// For the Avatar SDK and Unity, this is (1, 0, 0)
+            ///
+            public ovrAvatar2Vector3f clientSpaceRightAxis;
+
+            ///
+            /// Defines the up axis in the game engine coordinate system.
+            /// For the Avatar SDK and Unity, this is (0, 1, 0)
+            ///
+            public ovrAvatar2Vector3f clientSpaceUpAxis;
+
+            ///
+            /// Defines the forward axis in the game engine coordinate system.
+            /// For the Avatar SDK this is (0, 0, -1). For Unity, it is (0, 0, 1)
+            ///
+            public ovrAvatar2Vector3f clientSpaceForwardAxis;
 
             public string clientName;
         }
@@ -170,6 +186,15 @@ namespace Oculus.Avatar2
             info.defaultModelColor.x = DefaultAvatarColorRed;
             info.defaultModelColor.y = DefaultAvatarColorGreen;
             info.defaultModelColor.z = DefaultAvatarColorBlue;
+#if OVR_AVATAR_ENABLE_CLIENT_XFORM
+            info.clientSpaceRightAxis = UnityEngine.Vector3.right;
+            info.clientSpaceUpAxis = UnityEngine.Vector3.up;
+            info.clientSpaceForwardAxis = UnityEngine.Vector3.forward;
+#else
+            info.clientSpaceRightAxis = UnityEngine.Vector3.right;
+            info.clientSpaceUpAxis = UnityEngine.Vector3.up;
+            info.clientSpaceForwardAxis = -UnityEngine.Vector3.forward;
+#endif
 
             info.clientName = "unknown_unity";
             return info;
@@ -438,13 +463,13 @@ namespace Oculus.Avatar2
         /// </summary>
         /// <returns>Returns success</returns>
         [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl)]
-        private static extern ovrAvatar2Result ovrAvatar2_EnableDevToolsLink();
+        public static extern ovrAvatar2Result ovrAvatar2_EnableDevToolsLink();
 
         /// <summary>
         /// Disables the link from the native runtime to Avatar developer tools.
         /// </summary>
         /// <returns>Returns success</returns>
         [DllImport(LibFile, CallingConvention = CallingConvention.Cdecl)]
-        private static extern ovrAvatar2Result ovrAvatar2_DisableDevToolsLink();
+        public static extern ovrAvatar2Result ovrAvatar2_DisableDevToolsLink();
     }
 }
