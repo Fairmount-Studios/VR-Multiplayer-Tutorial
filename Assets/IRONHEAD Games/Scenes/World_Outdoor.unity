@@ -9774,12 +9774,12 @@ Transform:
   - {fileID: 1862199268}
   - {fileID: 334336195}
   - {fileID: 584238927}
+  - {fileID: 1963456100}
   - {fileID: 60049858}
   - {fileID: 1617603276}
   - {fileID: 1633182438}
   - {fileID: 498009666}
   - {fileID: 1368999358}
-  - {fileID: 1963456100}
   - {fileID: 1505159871}
   - {fileID: 711738964}
   - {fileID: 1511280470}
@@ -9983,8 +9983,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MetaAvatarPrefab: {fileID: 705909372409041623, guid: ba77ff95ead03314ca959ef574a1116c, type: 3}
   GenericVRPlayerPrefab: {fileID: 4050489475725942366, guid: 3d33e6a07da6ebc49b5ebf396059a914, type: 3}
-  spawnPosition1: {x: -19.581, y: 6.276, z: -21.747}
-  spawnPosition2: {x: -23.27, y: 6.183, z: -17.171}
+  spawnPosition1: {x: -19.581, y: 6.183, z: -21.747}
+  spawnPosition2: {x: -22.83, y: 6.183, z: -21.769}
+  spawnPosition3: {x: -25.208, y: 6.183, z: -19.389}
+  spawnPosition4: {x: -23.27, y: 6.183, z: -17.171}
 --- !u!4 &868661712 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2393690872585829147, guid: 67ba5864b6ec20441a8243de97b959c3, type: 3}
@@ -21639,7 +21641,7 @@ Transform:
   - {fileID: 445392470}
   - {fileID: 223004401}
   m_Father: {fileID: 864172936}
-  m_RootOrder: 292
+  m_RootOrder: 287
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1968845663
 PrefabInstance:
