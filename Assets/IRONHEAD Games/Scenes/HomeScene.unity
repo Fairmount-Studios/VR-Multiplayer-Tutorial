@@ -1406,17 +1406,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 448162103}
   m_Mesh: {fileID: -3196096545034456589, guid: 7586964749e85494bb64d8c66c05abe2, type: 3}
---- !u!114 &451559188 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3353666618156345472, guid: 9c1753431f121d84497094683cf4c612, type: 3}
-  m_PrefabInstance: {fileID: 1042001141}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &478380506
 GameObject:
   m_ObjectHideFlags: 0
@@ -3504,16 +3493,36 @@ PrefabInstance:
       value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 3353666616921926523, guid: 9c1753431f121d84497094683cf4c612, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3353666616921926523, guid: 9c1753431f121d84497094683cf4c612, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3353666616921926523, guid: 9c1753431f121d84497094683cf4c612, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1643912758}
+      objectReference: {fileID: 11500000, guid: 933e76297f032fc408c6b82579d81e54, type: 3}
+    - target: {fileID: 3353666616921926523, guid: 9c1753431f121d84497094683cf4c612, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 3353666616921926523, guid: 9c1753431f121d84497094683cf4c612, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnEnterButtonClicked_Outdoor
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 3353666616921926523, guid: 9c1753431f121d84497094683cf4c612, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: RoomManager, Assembly-CSharp
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3353666616921926523, guid: 9c1753431f121d84497094683cf4c612, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_StringArgument
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 3353666616921926523, guid: 9c1753431f121d84497094683cf4c612, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 3353666617062148212, guid: 9c1753431f121d84497094683cf4c612, type: 3}
       propertyPath: m_Layer
@@ -4815,17 +4824,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1235009075 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3353666617184783469, guid: 9c1753431f121d84497094683cf4c612, type: 3}
-  m_PrefabInstance: {fileID: 1042001141}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1264603809
 GameObject:
   m_ObjectHideFlags: 0
@@ -6202,11 +6200,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1643912756}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54a7be344b948624c83779714d50870a, type: 3}
+  m_Script: {fileID: 11500000, guid: 933e76297f032fc408c6b82579d81e54, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OccupancyRateText_ForSchool: {fileID: 1235009075}
-  OccupancyRateText_ForOutdoor: {fileID: 451559188}
+  OccupancyRateText_ForSchool: {fileID: 0}
+  OccupancyRateText_ForOutdoor: {fileID: 0}
 --- !u!1 &1670294897
 GameObject:
   m_ObjectHideFlags: 0

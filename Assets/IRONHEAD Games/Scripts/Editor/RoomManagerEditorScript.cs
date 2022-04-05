@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using Paire;
 
-[CustomEditor(typeof(RoomManager))]
+[CustomEditor(typeof(Paire.RoomManager))]
 public class RoomManagerEditorScript : Editor
 {
     public override void OnInspectorGUI()
@@ -11,7 +12,7 @@ public class RoomManagerEditorScript : Editor
         DrawDefaultInspector();
         EditorGUILayout.HelpBox("This script is responsbile for creating and joining rooms", MessageType.Info);
 
-        RoomManager roomManager = (RoomManager)target;
+        Paire.RoomManager roomManager = (Paire.RoomManager)target;
 
 
         if (GUILayout.Button("Join School Room"))

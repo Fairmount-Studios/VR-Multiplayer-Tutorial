@@ -9,6 +9,7 @@ under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR COND
 ANY KIND, either express or implied. See the License for the specific language governing
 permissions and limitations under the License.
 ************************************************************************************/
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -641,6 +642,14 @@ public class OVRPassthroughLayer : MonoBehaviour
 
 			passthroughOverlay.currentOverlayShape = overlayShape;
 		}
+
+		// Disable the overlay when passthrough is disabled as a whole so the layer doesn't get submitted.
+		// Both the desired (`isInsightPassthroughEnabled`) and the actual (IsInsightPassthroughInitialized()) PT
+		// initialization state are taken into account s.t. the overlay gets disabled as soon as PT is flagged to be
+		// disabled, and enabled only when PT is up and running again.
+		passthroughOverlay.enabled = OVRManager.instance != null &&
+			OVRManager.instance.isInsightPassthroughEnabled &&
+			OVRManager.IsInsightPassthroughInitialized();
 	}
 
 	#endregion
